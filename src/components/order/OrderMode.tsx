@@ -22,12 +22,12 @@ const NOT_CONNECTED = 'Connect your Spotify account first — Spettro reads play
 export function OrderMode() {
   const [url, setUrl] = useState('');
   const [connected, setConnected] = useState<boolean | null>(null);
-  const { phase, revealed, tracks, error, setError, start } = useOrderSequence();
+  const { phase, revealed, tracks, error, setError, start, reset } = useOrderSequence();
   const stats = useMemo(() => sequenceStats(tracks), [tracks]);
 
   const refreshSession = useCallback(
     () =>
-      fetch('/api/spotify/session')
+      fetch('/api/spotify/session', { cache: 'no-store' })
         .then((response) => response.json() as Promise<{ connected: boolean }>)
         .then((session) => setConnected(session.connected))
         .catch(() => setConnected(false)),
@@ -46,10 +46,12 @@ export function OrderMode() {
     void refreshSession();
   }, [refreshSession, setError]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
+    // Nothing of theirs stays on screen either: the sequence goes with the session.
+    reset();
     setConnected(false);
-    void fetch('/api/spotify/session', { method: 'DELETE' });
-  }, []);
+    await fetch('/api/spotify/session', { method: 'DELETE' }).catch(() => {});
+  }, [reset]);
 
   const handleSubmit = () => {
     if (!isSpotifyPlaylistUrl(url)) {
@@ -69,7 +71,7 @@ export function OrderMode() {
     <div className={styles.stack}>
       <ScanBar active={phase === 'processing'} label="Reading covers" />
 
-      <SpotifyConnect connected={connected} onDisconnect={disconnect} />
+      <SpotifyConnect connected={connected} onDisconnect={() => void disconnect()} />
 
       <PlaylistForm
         value={url}

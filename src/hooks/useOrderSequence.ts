@@ -125,5 +125,15 @@ export function useOrderSequence() {
     [reveal, stop],
   );
 
-  return { phase, revealed, tracks, error, setError, start };
+  /** Drops whatever is on screen: used when the account is disconnected. */
+  const reset = useCallback(() => {
+    stop();
+    runId.current += 1;
+    setPhase('empty');
+    setTracks([]);
+    setRevealed(new Set());
+    setError(null);
+  }, [stop]);
+
+  return { phase, revealed, tracks, error, setError, start, reset };
 }

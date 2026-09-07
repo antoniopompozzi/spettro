@@ -13,10 +13,12 @@ const EXPIRY_MARGIN_S = 60;
 
 /**
  * Reading a playlist's items needs `playlist-read-private` even for a public
- * playlist; the collaborative scope covers playlists shared with the listener,
- * and the profile scope is only there to name the connected account.
+ * playlist, and the collaborative scope covers playlists shared with the
+ * listener. Nothing else is asked for: Spettro never reads the profile, so
+ * requesting `user-read-private` would be permission it does not use — and the
+ * privacy policy would have to disclose a collection that never happens.
  */
-const SCOPES = 'playlist-read-private playlist-read-collaborative user-read-private';
+const SCOPES = 'playlist-read-private playlist-read-collaborative';
 
 /**
  * Spotify only accepts HTTPS or the numeric loopback address, so the default is

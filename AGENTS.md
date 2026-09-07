@@ -49,6 +49,41 @@ trap is worth remembering though: it answered `bpm: 0` far more often than it
 missed a track outright, so a match rate near 100% went with BPM coverage under
 a third. Whatever the source, count the two separately.
 
+## Legal obligations that do not live in code
+
+Spotify's Developer Terms v10 (15 May 2025) bind this app because the developer
+account accepted them. Two clauses fire at moments when nobody will think to go
+and reread the contract, so they are written down here instead.
+
+**Security incidents — 24 hours.** If Spotify personal data held by this app is
+lost, corrupted, or accessed by anyone who should not have it, notify
+`security@spotify.com` without undue delay and in any case **within 24 hours**
+(Appendix A, point 9). In practice the only Spotify personal data this app holds
+is the session tokens in a listener's own cookies, but a leaked client id, a
+compromised host, or a bug that exposes another listener's session all count.
+
+**No AI training on Spotify data — ever.** Section IV.2.a.i forbids using the
+Spotify Platform or Spotify Content to train a machine learning or AI model, or
+letting it feed into one. This is not limited to production: do not paste
+playlist contents, track metadata, cover art or API responses into an AI service
+while developing or debugging either. Reduce a bug to a synthetic example first.
+
+Related, and already load-bearing elsewhere in this file: artwork may only come
+from Spotify, and the app must not build a store of Spotify content. Section
+IV.3 forbids retaining, aggregating or building databases of it beyond what a
+request needs, and requires showing current data rather than stale copies. The
+current implementation keeps nothing: every outbound request sets
+`cache: 'no-store'`, all four routes are `force-dynamic`, there is no
+module-level cache and no browser storage. Keep it that way — if a cache is ever
+needed for performance, it may hold only metadata and artwork, must be
+short-lived, and must not persist to disk.
+
+**Privacy policy and end user agreement** live at `/privacy` and `/terms`, are
+linked next to the connect button so they are reachable before sign-in, and
+describe the implementation exactly. Change one and the other has to follow: the
+cookie table, the list of what is read, and the named third party (ReccoBeats,
+which receives Spotify track ids and nothing else) are all statements about code.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

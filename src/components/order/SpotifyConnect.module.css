@@ -1,3 +1,7 @@
+.block {
+  min-height: 34px;
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -8,6 +12,7 @@
 .status {
   flex: 1;
   min-width: 0;
+  margin: 0;
   color: var(--text-dim);
 }
 
@@ -27,7 +32,7 @@
 
 .action {
   flex: none;
-  padding: 8px 18px;
+  padding: 9px 18px;
   border: 1px solid var(--green-4);
   border-radius: var(--radius-inner);
   cursor: pointer;
@@ -43,12 +48,34 @@
   border-color: var(--green-1);
 }
 
-.quiet {
-  border-color: transparent;
+/* What Spettro will read, or what disconnecting does — before either decision. */
+.note {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--text-dim);
+  text-wrap: pretty;
 }
 
-.quiet:hover {
-  border-color: transparent;
-  color: var(--text);
+.note a {
+  color: var(--green-1);
+}
+
+.links {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0 0;
+  color: var(--text-placeholder);
+}
+
+.links a {
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.links a:hover {
+  color: var(--green-1);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
