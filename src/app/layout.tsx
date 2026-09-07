@@ -29,7 +29,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: 'Spettro',
   description:
-    'Reorder a playlist so its covers move through the colour spectrum, and find new tracks from up to three seeds.',
+    'Reorder one of your playlists so its covers move through the colour spectrum, and find new tracks from up to three seeds.',
   applicationName: 'Spettro',
   manifest: '/manifest.webmanifest',
   appleWebApp: {

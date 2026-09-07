@@ -1,7 +1,7 @@
 {
   "name": "Spettro",
   "short_name": "Spettro",
-  "description": "Reorder a playlist so its covers move through the colour spectrum, and find new tracks from up to three seeds.",
+  "description": "Reorder one of your playlists so its covers move through the colour spectrum, and find new tracks from up to three seeds.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

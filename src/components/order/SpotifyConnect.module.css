@@ -1,0 +1,54 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-height: 34px;
+}
+
+.status {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-dim);
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: var(--green-4);
+  vertical-align: 1px;
+}
+
+.off {
+  background: var(--text-placeholder);
+}
+
+.action {
+  flex: none;
+  padding: 8px 18px;
+  border: 1px solid var(--green-4);
+  border-radius: var(--radius-inner);
+  cursor: pointer;
+  background: transparent;
+  color: var(--green-1);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.action:hover {
+  background: var(--surface-raised);
+  border-color: var(--green-1);
+}
+
+.quiet {
+  border-color: transparent;
+  color: var(--text-dim);
+}
+
+.quiet:hover {
+  border-color: transparent;
+  color: var(--text);
+}

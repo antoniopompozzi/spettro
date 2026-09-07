@@ -1,9 +1,7 @@
 /**
- * Colour helpers used by the mock palette and by the UI to decide whether a
- * label sitting on top of a cover should read dark or light.
- *
- * Real cover-colour extraction (node-vibrant) lands in a later step; for now
- * every colour in the app comes from `lib/mock`.
+ * Colour helpers: the API route sorts a sequence by luminance with these, and
+ * the UI uses them to decide whether a label sitting on top of a cover should
+ * read dark or light. Extraction itself is node-vibrant, in `lib/server/cover`.
  */
 
 /** HSL (h in degrees, s/l in percent) to an uppercase `#RRGGBB` string. */

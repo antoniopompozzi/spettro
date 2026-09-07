@@ -1,6 +1,11 @@
 .row {
   display: grid;
-  grid-template-columns: repeat(var(--cover-cols), 1fr);
+  /*
+   * minmax(0, …), not 1fr: a grid track's automatic minimum is its min-content
+   * width, so a long unbreakable title would widen its own column and squeeze
+   * the rest of the row. Zero as the floor lets the captions ellipsize instead.
+   */
+  grid-template-columns: repeat(var(--cover-cols), minmax(0, 1fr));
   gap: var(--gap);
 }
 
