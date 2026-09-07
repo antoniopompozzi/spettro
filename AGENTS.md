@@ -1,88 +1,235 @@
 # SPETTRO
 
+Undergraduate thesis project, Scienze della Comunicazione. It is the **second
+practical experiment of a thesis about vibe coding**, so how the work is done is
+itself part of the subject matter. **Due 23 September 2026.**
+
+Two modes:
+
+- **ORDER** — reorders one of the listener's own Spotify playlists along a
+  colour sequence read off the album artwork. Built and working.
+- **DISCOVER** — finds tracks similar to one to three seeds. **Not built.** The
+  UI shell exists and runs on mock data in `src/lib/mock/tracks.ts`.
+
+This file is the handover between sessions. Everything below is something that
+cost time to discover or a decision whose reasoning is not visible in the code.
+Read it before changing behaviour: several decisions look arbitrary and are not.
+
+---
+
 ## Running it
 
-Open the dev server at **http://127.0.0.1:3000**, never `localhost:3000`. Spotify
-only accepts a numeric loopback redirect URI, so the OAuth callback lands on
-127.0.0.1 and the session cookies are scoped to that host — cookies do not cross
-between the two names, so on localhost a successful login still reads as
-"not connected". `allowedDevOrigins` in `next.config.mjs` is there for the same
-reason: without it Next blocks the dev resources and the page never hydrates.
+**Open the dev server at `http://127.0.0.1:3000`, never `localhost:3000`.**
+Spotify only accepts HTTPS or a numeric loopback redirect URI, so the OAuth
+callback lands on 127.0.0.1, and session cookies are scoped to that host.
+Cookies do not cross between the two names: on localhost a successful login
+still reads as "not connected". `allowedDevOrigins` in `next.config.mjs` exists
+for the same reason — without it Next blocks its dev resources and the page
+never hydrates.
 
-`http://127.0.0.1:3000/api/spotify/callback` must be registered as a Redirect URI
-on the Spotify app, spelled exactly like that.
+`http://127.0.0.1:3000/api/spotify/callback` must be registered as a Redirect
+URI on the Spotify app, spelled exactly that way.
 
-## Spotify
+`SPOTIFY_CLIENT_ID` in `.env.local` is the **only** credential needed. PKCE does
+not use a client secret; it was removed. Do not reintroduce one.
 
-Order runs on a **user** token (Authorization Code + PKCE), not client
-credentials: since the 2026 API migration `/playlists/{id}/tracks` is gone and
-its replacement `/playlists/{id}/items` refuses app tokens. Spotify serves
-playlist items only to the playlist's owner or a collaborator, whatever its
-privacy setting says — a public playlist belonging to someone else is a 403.
-That constraint is what the UI copy promises against, so keep them in step.
+Stack: Next 16.3.4 (Turbopack, App Router), React 19, TypeScript 7, Node 24.
 
-`SPOTIFY_CLIENT_ID` is the only credential the app needs. PKCE does not use a
-client secret; do not reintroduce one.
+`pkill -f "next dev"` does **not** kill the dev server on this machine. Use
+PowerShell: `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*next*' } | Stop-Process -Force`,
+then check port 3000 is actually free before restarting.
 
-## Artwork and tempo
+---
 
-Cover art comes from Spotify and nowhere else, for two reasons that each settle
-it alone. Spotify's design guidelines allow only Spotify-supplied artwork
-alongside Spotify metadata. And a text search against another catalogue returns
-whichever release ranks highest today — Deezer offered four different covers
-among the first six hits for one track — so the extracted colour, and therefore
-the whole sequence, would drift over time for reasons unrelated to the music.
+## Platform constraints, learned the hard way
 
-Tempo comes from ReccoBeats (`/v1/audio-features?ids=…`, no auth, Spotify base-62
-ids straight in, 40 ids per call, 500ms pacing) and from no second source. Tempo
-estimation is ambiguous by an octave — 85 and 170 can describe the same groove —
-so mixing sources puts tracks on different scales. One source keeps that error
-systematic and relative comparisons intact. Do not normalise octaves either: a
-drum and bass track at 170 and a hip hop track at 85 are genuinely different.
+**Spotify serves playlist items only to the playlist's owner or a collaborator**
+— whatever its privacy setting says. A public playlist belonging to somebody
+else is a 403. This is why Order needs a user login at all.
 
-Roughly 10-25% of a playlist has no tempo from anyone. That absence is `null`,
-never `0`, and never a reason to drop a track: it stays in the sequence and sits
-out rhythmic comparison. The tempo read-out shows how many tracks it speaks for.
+**Client Credentials cannot read a playlist.** Since the 2026 API migration
+`/playlists/{id}/tracks` is gone (403 for everyone) and its replacement
+`/playlists/{id}/items` answers `401 Valid user authentication required` to app
+tokens. Hence Authorization Code + PKCE. When using `fields` on `/items`, the
+entry key is `item(...)`, not `track(...)` — the old name silently returns
+nothing.
 
-Deezer was the original source for both and is no longer in the pipeline. Its
-trap is worth remembering though: it answered `bpm: 0` far more often than it
-missed a track outright, so a match rate near 100% went with BPM coverage under
-a third. Whatever the source, count the two separately.
+**Spotify's Audio Features and Recommendations endpoints are retired.** Audio
+features come from **ReccoBeats** (`https://api.reccobeats.com/v1/audio-features?ids=…`):
+no auth, addressed directly with Spotify base-62 track ids, **maximum 40 ids per
+call** (44 returns 400), 500ms pacing between calls, honours `Retry-After` on
+429. The response's `href` field maps each row back to its Spotify track id.
+It also returns energy, danceability, valence, acousticness, instrumentalness,
+liveness, loudness, speechiness, key and mode — all kept on `Track.features`,
+unused today, and exactly what Discover will need.
 
-## Legal obligations that do not live in code
+**Scopes requested: `playlist-read-private` and `playlist-read-collaborative`,
+nothing else.** `user-read-private` was removed because the profile is never
+read; keep it removed. Requesting an unused permission would also force the
+privacy policy to disclose a collection that never happens.
 
-Spotify's Developer Terms v10 (15 May 2025) bind this app because the developer
-account accepted them. Two clauses fire at moments when nobody will think to go
-and reread the contract, so they are written down here instead.
+Spotify search caps this app at `limit=10` (a development-mode signal), which
+matters if a future feature needs search.
+
+---
+
+## Product decisions, and why
+
+Reversing any of these in good faith is the main risk of a fresh session.
+
+**Cover art comes from Spotify and nowhere else.** Two independent reasons: the
+Design Guidelines allow only Spotify-supplied artwork beside Spotify metadata;
+and a text search against another catalogue returns whichever release ranks
+highest *today* — Deezer offered four different covers among the first six hits
+for one track — so the extracted colour and the whole sequence drifted over
+time for reasons unrelated to the music.
+
+**Read-only. Spettro never modifies a listener's real playlists.** The sequence
+exists on screen; writing it back has never been in scope.
+
+**Ordering walks a fixed list of eleven named bands, not equal slices of the hue
+wheel** (`src/lib/spectrum.ts`). A wheel must be cut somewhere, and whatever
+straddles the cut tears into two groups at opposite ends of the grid — that
+happened to the reds, a crimson at 22° landing a whole grid from a scarlet at
+29°. The cut is now at 13°, between pink and red, where the sequence ends
+anyway. Band ranges are declared constants meant for tuning by eye.
+
+**Classification and ordering use the dominant colour cluster, never an
+average.** Averaging opposing hues yields a colour that is nowhere in the image
+— a blue sleeve with a large red face came out dusty mauve — and it put two
+obviously blue covers in different halves of the grid. Clustering runs in OKLab
+over the chromatic pixels only (blacks and greys have no hue to vote with), and
+is **seeded from a histogram, never at random**: two runs of the same playlist
+must return byte-identical results, which has been verified.
+
+Averaging in *linear light* is still correct where an average is wanted, because
+light adds linearly; sorting uses **OKLab lightness**, which tracks how bright a
+colour looks rather than how much light it emits.
+
+**Tempo comes from one source, with no octave normalisation and no fallback.**
+Tempo estimation is ambiguous by an octave — 85 and 170 can describe the same
+groove — so mixing sources puts tracks on different scales. One source keeps
+that error systematic, and relative comparison is what Discover needs. Do not
+normalise octaves either: a drum and bass track at 170 and a hip hop track at 85
+are genuinely different.
+
+**A track with no tempo keeps `bpm: null`, never `0`.** It stays in the grid and
+sits out rhythmic comparison only. Roughly 10-25% of a playlist has no tempo
+from anyone. The read-out says how many tracks its figure speaks for.
+
+Deezer was the original source for artwork and tempo and is **no longer in the
+pipeline**. Its trap is worth remembering: it answered `bpm: 0` far more often
+than it missed a track outright, so a match rate near 100% went with BPM
+coverage under a third. Whatever the source, count matches and coverage
+separately.
+
+---
+
+## Spotify visual rules
+
+- **Nothing may be drawn on top of artwork**, and it may not be cropped,
+  animated, distorted or blurred. The index, the hex and the colour ribbon sit
+  *below* the cover; the reveal animates only the colour plate behind it; the
+  hover affordance lives on the title, which is also the link out.
+- **Corner radius 8px on desktop, 4px on mobile** (`--radius-artwork`). The rest
+  of the interface keeps its own 12px — the rule is about artwork only.
+- **Attribution**: the official white monochrome mark, once, above the grid, at
+  96px wide (minimum is 70px) with 14px of clear space, which is half the
+  rendered icon height. Green is sanctioned only on black or white, and green
+  Spotify beside green Spettro would read as endorsement. Asset in
+  `public/spotify/`, downloaded from the official Design Guidelines pack.
+- **Every track links back to Spotify**, via `external_urls.spotify` on the
+  title, labelled "Play on Spotify" in its accessible name.
+- Allowed link labels are exactly: "OPEN SPOTIFY", "PLAY ON SPOTIFY", "LISTEN ON
+  SPOTIFY", "GET SPOTIFY FREE".
+
+---
+
+## Contractual obligations
+
+Spotify's Developer Terms v10 (15 May 2025) bind this app. Two clauses fire when
+nobody will think to reread the contract:
 
 **Security incidents — 24 hours.** If Spotify personal data held by this app is
 lost, corrupted, or accessed by anyone who should not have it, notify
-`security@spotify.com` without undue delay and in any case **within 24 hours**
-(Appendix A, point 9). In practice the only Spotify personal data this app holds
-is the session tokens in a listener's own cookies, but a leaked client id, a
-compromised host, or a bug that exposes another listener's session all count.
+`security@spotify.com` without undue delay and **within 24 hours** (Appendix A,
+point 9).
 
 **No AI training on Spotify data — ever.** Section IV.2.a.i forbids using the
-Spotify Platform or Spotify Content to train a machine learning or AI model, or
-letting it feed into one. This is not limited to production: do not paste
-playlist contents, track metadata, cover art or API responses into an AI service
-while developing or debugging either. Reduce a bug to a synthetic example first.
+Spotify Platform or Spotify Content to train a machine learning or AI model or
+to let it feed into one. Not limited to production: **do not paste playlist
+contents, track metadata, cover art or API responses into an AI service while
+developing or debugging either.** Reduce a bug to a synthetic example first.
 
-Related, and already load-bearing elsewhere in this file: artwork may only come
-from Spotify, and the app must not build a store of Spotify content. Section
-IV.3 forbids retaining, aggregating or building databases of it beyond what a
-request needs, and requires showing current data rather than stale copies. The
-current implementation keeps nothing: every outbound request sets
-`cache: 'no-store'`, all four routes are `force-dynamic`, there is no
-module-level cache and no browser storage. Keep it that way — if a cache is ever
-needed for performance, it may hold only metadata and artwork, must be
-short-lived, and must not persist to disk.
+**Retention (IV.3 audit, current and verified).** Nothing is cached. Every
+outbound `fetch` sets `cache: 'no-store'`, all API routes are `force-dynamic`,
+there is no module-level cache and no browser storage. Keep it that way. If a
+cache ever becomes necessary for performance it may hold only metadata and
+artwork, must be short-lived, and must not persist to disk.
 
-**Privacy policy and end user agreement** live at `/privacy` and `/terms`, are
-linked next to the connect button so they are reachable before sign-in, and
-describe the implementation exactly. Change one and the other has to follow: the
-cookie table, the list of what is read, and the named third party (ReccoBeats,
-which receives Spotify track ids and nothing else) are all statements about code.
+**Logging.** Production logs carry counts only — no track titles, artists or
+playlist ids, and unexpected failures log the error's type and not its message,
+because a failed fetch quotes the URL it failed on. Detail goes through
+`debug()` in `src/lib/server/log.ts`, silent outside development. The privacy
+policy states this, so a change here is a change to a published promise.
+
+`/privacy` and `/terms` describe the implementation exactly and are linked
+beside the connect button so they are reachable before sign-in. The cookie
+table, the list of what is read, and the named third party (ReccoBeats,
+receiving Spotify track ids and nothing else) are all statements about code:
+change one and the other must follow.
+
+---
+
+## Working conventions
+
+- A dedicated branch per part; one commit per activity.
+- **No merge to main without explicit confirmation.** Same for pushing.
+- Commit messages explain the non-obvious *why*, not the diff.
+- Visual verification with Playwright at **desktop 1280×900** and **mobile
+  390×844** (the grid is 7 columns above the 761px breakpoint, 3 below).
+- **Verify real behaviour, not just screenshots.** Read back the API response,
+  assert on counts and ordering, compare two runs for determinism. Several
+  conclusions in this project were wrong until measured.
+- **`fullPage: true` screenshots are unreliable on the grid.** Chromium's
+  capture-beyond-viewport does not paint images that were never composited on
+  screen, so the lower rows come out as empty colour plates while the DOM says
+  every image is decoded. Set the viewport to the full page height and take an
+  ordinary screenshot instead.
+- OAuth cannot be driven headlessly from a cold profile. The scratchpad keeps a
+  persistent Chromium profile (`chrome-profile`) whose Spotify session survives
+  between runs; a fresh sign-in needs a headed window for the human to log in,
+  after which the script can click the consent button itself.
+- Band counts should be read **per distinct cover, not per track**. Eight tracks
+  from one album inflate a band and look like a mis-tuned range; they are not.
+
+Useful OKLCH anchors: red 29°, orange 53°, gold 95°, yellow 110°, green 142°,
+turquoise 185°, cyan 195°, sky 226°, blue 264°, indigo 302°, purple 328°,
+pink 352°. Indigo and blue-violet land within a degree of each other and part on
+lightness, which is why that band border is a convention.
+
+---
+
+## What is left
+
+- **Part C — technical security.**
+- **Part D — accessibility.**
+- **DISCOVER**, including instant-suggestion search for the seeds. ReccoBeats
+  also offers seed-based recommendations; whether it replaces or joins Last.fm
+  is undecided.
+- **Deploy to Vercel**: update the Redirect URI on the Spotify app to the
+  production URL, move `SPOTIFY_CLIENT_ID` into the project's environment
+  variables, and drop `allowedDevOrigins` from the equation (it is dev-only).
+  Cookies become `Secure` automatically because `baseCookie` keys off
+  `NODE_ENV`.
+- **Sitemap and metadata.**
+
+Open question left from Part A: the neutral threshold in
+`src/lib/server/cover.ts` (`NEUTRAL_CHROMA` 0.045, `NEUTRAL_SHARE` 0.12) puts 18
+of 44 covers of the test playlist in the achromatic bands. Half of those really
+are black-and-white photographs; the other half have real but muted colour that
+the threshold discards. Measured alternatives: chroma 0.03 → 14 neutral, chroma
+0.02 → 8. Not changed, because the value was chosen deliberately.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
