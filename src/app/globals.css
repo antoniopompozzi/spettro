@@ -1,0 +1,181 @@
+/*
+ * SPETTRO — design tokens and global primitives.
+ * Mobile-first: the base rules are the narrow layout, the 761px query is the
+ * wide one (the prototype treats <= 760px as mobile).
+ */
+
+:root {
+  /* Surfaces */
+  --bg: #141414;
+  --surface: #1c1c1c;
+  --surface-raised: #212121;
+
+  /* CRT phosphor scale */
+  --green-1: #43ec44;
+  --green-2: #5afe59;
+  --green-3: #36e339;
+  --green-4: #00c716;
+  --green-5: #00ae11;
+
+  /* Ink */
+  --text: #f2efe6;
+  --text-dim: #8a857c;
+  --text-placeholder: #6e6a63;
+
+  /* Geometry */
+  --radius: 20px;
+  --radius-inner: 16px;
+  --radius-cover: 12px;
+  --gap: 12px;
+  --pad-outer: 12px;
+  --pad-bottom: 40px;
+  --control-h: 52px;
+  --toggle-h: 48px;
+  --measure: 1440px;
+
+  /* Texture */
+  --grain-fine: 0.2;
+  --grain-coarse: 0.11;
+
+  color-scheme: dark;
+}
+
+@media (min-width: 761px) {
+  :root {
+    --gap: 16px;
+    --pad-outer: 24px;
+    --pad-bottom: 56px;
+    --control-h: 56px;
+    --toggle-h: 46px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * No visible scrollbar anywhere — the page still scrolls with wheel and swipe.
+ * This also keeps the header still: a classic scrollbar takes layout width, so
+ * without this the toggle jumps sideways the moment a page becomes scrollable.
+ */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+input,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input::placeholder {
+  color: var(--text-placeholder);
+}
+
+:focus-visible {
+  outline: 2px solid var(--green-2);
+  outline-offset: 2px;
+}
+
+/* --- Shared primitives ---------------------------------------------------- */
+
+/* Uppercase micro-label used for section titles and control text. */
+.microLabel {
+  font-size: 11px;
+  font-weight: 600;
+  font-stretch: 115%;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* Data, hex values, indices, BPM. */
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Scanline fill, applied to text via background-clip.
+ * --scan-line is the lit band, --scan-period the repeat, --scan-angle the
+ * direction the stripes travel. Horizontal by default; a diagonal glyph sets
+ * an angle so the stripes cross its stroke instead of running along it.
+ */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    var(--scan-angle, to bottom),
+    var(--green-1) 0,
+    var(--green-1) var(--scan-line, 2px),
+    transparent var(--scan-line, 2px),
+    transparent var(--scan-period, calc(var(--scan-line, 2px) * 3))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes spettro-scan {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes spettro-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

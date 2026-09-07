@@ -1,0 +1,36 @@
+.panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+
+@media (min-width: 761px) {
+  .panel {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.card {
+  min-width: 0;
+  padding: 20px 22px;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.label {
+  color: var(--text-dim);
+}
+
+.value {
+  margin-top: 12px;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--green-2);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .value {
+    font-size: 17px;
+  }
+}

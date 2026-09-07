@@ -1,0 +1,41 @@
+.toggle {
+  display: flex;
+  flex: none;
+  width: 100%;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+@media (min-width: 761px) {
+  .toggle {
+    width: auto;
+  }
+}
+
+.option {
+  flex: 1;
+  min-height: var(--toggle-h);
+  padding: 0 26px;
+  border: 0;
+  border-radius: var(--radius-inner);
+  cursor: pointer;
+  background: transparent;
+  color: var(--green-5);
+  font-size: 13px;
+  font-weight: 600;
+  font-stretch: 115%;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.option:hover:not(.active) {
+  color: var(--green-2);
+}
+
+.active {
+  background: var(--green-3);
+  color: var(--bg);
+}

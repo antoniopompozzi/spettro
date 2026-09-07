@@ -1,0 +1,30 @@
+.app {
+  position: relative;
+  min-height: 100dvh;
+  padding: var(--pad-outer) var(--pad-outer) var(--pad-bottom);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--gap);
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-top: var(--pad-outer);
+}
+
+@media (min-width: 761px) {
+  .header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+.main {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-top: var(--gap);
+}

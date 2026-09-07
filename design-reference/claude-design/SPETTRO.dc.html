@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="crossorigin">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Dots&amp;family=Archivo:wdth,wght@100..125,400..700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #141414; }
+  * { box-sizing: border-box; }
+  input { font-family: inherit; }
+  input::placeholder { color: #6E6A63; }
+  a { color: #43EC44; text-decoration: none; }
+  a:hover { color: #5AFE59; }
+  @keyframes spettro-scan { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+</style>
+</helmet>
+
+<div style="--bg:#141414;--surface:#1C1C1C;--green-1:#43EC44;--green-2:#5AFE59;--green-3:#36E339;--green-4:#00C716;--green-5:#00AE11;--text:#F2EFE6;--text-dim:#8A857C;--radius:20px;--radius-cover:12px;font-family:Archivo,system-ui,sans-serif;background:#141414;color:#F2EFE6;min-height:100vh;position:relative;padding:{{padOuter}}px {{padOuter}}px {{padBottom}}px {{padOuter}}px">
+
+  <div style="position:fixed;inset:0;z-index:60;pointer-events:none;mix-blend-mode:overlay;background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter%20id=%27g%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.42%27%20numOctaves=%274%27%20stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url%28%23g%29%27/%3E%3C/svg%3E);opacity:{{grainOpacity}}"></div>
+  <div style="position:fixed;inset:0;z-index:61;pointer-events:none;mix-blend-mode:soft-light;background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter%20id=%27h%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.18%27%20numOctaves=%272%27%20stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url%28%23h%29%27/%3E%3C/svg%3E);opacity:{{grainOpacityCoarse}}"></div>
+
+  <header style="max-width:1440px;margin:0 auto;display:flex;flex-direction:{{headerDir}};flex-wrap:wrap;align-items:{{headerAlign}};justify-content:space-between;gap:{{gap}}px;padding-top:{{padOuter}}px">
+    <h1 style="margin:0;min-width:0;flex:0 1 auto;font-family:'Zen Dots',Archivo,sans-serif;text-transform:uppercase;font-size:{{wordmarkSize}}px;line-height:0.92;letter-spacing:0.03em;background-image:repeating-linear-gradient(to bottom,#43EC44 0px,#43EC44 {{scanLine}}px,transparent {{scanLine}}px,transparent {{scanGap}}px);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent">SPETTRO</h1>
+
+    <div style="display:flex;flex:none;width:{{toggleWidth}};background:#1C1C1C;border-radius:20px;padding:4px;gap:4px">
+      <button type="button" onClick="{{setOrder}}" style="flex:1;min-height:{{toggleH}}px;border:0;cursor:pointer;border-radius:16px;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;font-stretch:115%;letter-spacing:0.18em;text-transform:uppercase;padding:0 26px;background:{{orderBg}};color:{{orderFg}}">Order</button>
+      <button type="button" onClick="{{setDiscover}}" style="flex:1;min-height:{{toggleH}}px;border:0;cursor:pointer;border-radius:16px;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;font-stretch:115%;letter-spacing:0.18em;text-transform:uppercase;padding:0 26px;background:{{discoverBg}};color:{{discoverFg}}">Discover</button>
+    </div>
+  </header>
+
+  <div style="max-width:1440px;margin:{{gap}}px auto 0;height:2px;background:#1C1C1C;overflow:hidden;opacity:{{progressOpacity}}">
+    <div style="height:2px;width:30%;background:#43EC44;animation:spettro-scan 1.15s linear infinite"></div>
+  </div>
+
+  <main style="max-width:1440px;margin:0 auto;padding-top:{{gap}}px">
+
+    <sc-if value="{{ isOrder }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <form onSubmit="{{submitOrder}}" style="display:flex;flex-direction:{{formDir}};gap:{{gap}}px">
+          <input value="{{url}}" onChange="{{onUrl}}" placeholder="Paste a Spotify playlist link" style="flex:1;min-height:{{inputH}}px;border:1px solid #00C716;background:#1C1C1C;color:#F2EFE6;border-radius:20px;padding:0 22px;font-size:15px;outline:none">
+          <button type="submit" style="min-height:{{inputH}}px;border:0;cursor:pointer;background:#36E339;color:#141414;border-radius:20px;padding:0 40px;font-weight:700;font-stretch:115%;letter-spacing:0.18em;text-transform:uppercase;font-size:13px">Sequence</button>
+        </form>
+
+        <sc-if value="{{ orderError }}" hint-placeholder-val="{{ false }}">
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5AFE59;margin:{{gap}}px 0 0">That link is not a Spotify playlist. Paste a link that begins with open.spotify.com/playlist.</p>
+        </sc-if>
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <section style="margin-top:{{gap}}px;background:#1C1C1C;border-radius:20px;padding:44px 32px">
+            <h2 style="margin:0 0 10px;font-size:13px;font-weight:600;font-stretch:115%;letter-spacing:0.22em;text-transform:uppercase;color:#00AE11">No sequence yet</h2>
+            <p style="margin:0;max-width:52ch;font-size:16px;line-height:1.5;color:#8A857C;text-wrap:pretty">Paste a playlist link above and Spettro will read the artwork of every track, then reorder the whole playlist so the covers move through the colour spectrum from dark to light.</p>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <section style="margin-top:{{gap}}px;display:grid;grid-template-columns:{{statCols}};gap:{{gap}}px">
+              <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+                <div style="background:#1C1C1C;border-radius:20px;padding:20px 22px">
+                  <div style="font-size:11px;font-weight:600;font-stretch:115%;letter-spacing:0.22em;text-transform:uppercase;color:#8A857C">{{ s.label }}</div>
+                  <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:22px;color:#5AFE59;letter-spacing:-0.01em">{{ s.value }}</div>
+                </div>
+              </sc-for>
+            </section>
+
+            <section style="margin-top:{{gap}}px">
+              <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
+                <div>
+                  <div style="display:grid;grid-template-columns:{{ coverCols }};gap:{{gap}}px">
+                    <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="5">
+                      <div onClick="{{ c.onTap }}" onMouseEnter="{{ c.onEnter }}" onMouseLeave="{{ c.onLeave }}" style="cursor:pointer">
+                        <div style="position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:{{ c.bg }};transform:{{ c.lift }};transition:transform 180ms ease">
+                          <span style="position:absolute;top:8px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ c.indexColor }}">{{ c.index }}</span>
+                          <span style="position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:rgba(20,20,20,0.72);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:#F2EFE6;opacity:{{ c.labelOpacity }};transition:opacity 140ms ease">{{ c.hex }}</span>
+                        </div>
+                        <div style="margin-top:8px;text-align:center;font-size:12px;color:#F2EFE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title }}</div>
+                        <div style="margin-top:2px;text-align:center;font-size:11px;color:#8A857C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.artist }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ row.arrow }}" hint-placeholder-val="{{ false }}">
+                    <div style="height:{{gap}}px;display:flex;justify-content:{{ row.arrowJustify }};align-items:center;overflow:visible">
+                      <span style="font-size:16px;line-height:1;font-family:'IBM Plex Mono',monospace;background-image:repeating-linear-gradient(to bottom,#43EC44 0px,#43EC44 1px,transparent 1px,transparent 3px);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent">{{ row.arrow }}</span>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </section>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDiscover }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <form onSubmit="{{submitSeedPlaylist}}" style="display:flex;flex-direction:{{formDir}};gap:{{gap}}px">
+          
+          
+        </form>
+
+        <sc-if value="{{ seedError }}" hint-placeholder-val="{{ false }}">
+          
+        </sc-if>
+
+        <sc-if value="{{ seedGridLoaded }}" hint-placeholder-val="{{ false }}">
+          <section style="margin-top:{{gap}}px;background:#1C1C1C;border-radius:20px;padding:{{gap}}px">
+            <h2 style="margin:0 0 14px;font-size:11px;font-weight:600;font-stretch:115%;letter-spacing:0.22em;text-transform:uppercase;color:#8A857C">Pick up to three covers as seeds</h2>
+            <div style="display:grid;grid-template-columns:{{seedCols}};gap:{{gap}}px">
+              <sc-for list="{{ playlistCovers }}" as="c" hint-placeholder-count="16">
+                <div onClick="{{ c.onTap }}" style="cursor:pointer;position:relative;aspect-ratio:1/1;border-radius:12px;background:{{ c.bg }};border:{{ c.border }};box-shadow:{{ c.ring }}">
+                  <span style="position:absolute;top:6px;left:8px;width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#43EC44;color:#141414;font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:{{ c.badgeOpacity }}">{{ c.badge }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-if>
+
+        <section style="margin-top:{{gap}}px;display:flex;flex-direction:{{formDir}};gap:{{gap}}px;align-items:stretch">
+          <sc-for list="{{ seeds }}" as="s" hint-placeholder-count="3">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:{{ s.labelColor }}">{{ s.label }}</span>
+              <div style="display:flex;align-items:center;gap:10px;min-height:{{inputH}}px;background:#1C1C1C;border:1px solid {{ s.border }};border-radius:20px;padding:0 20px">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#00AE11">{{ s.index }}</span>
+                <input value="{{ s.value }}" onChange="{{ s.onChange }}" readOnly="{{ s.readOnly }}" placeholder="{{ s.placeholder }}" style="flex:1;min-width:0;border:0;background:transparent;color:#F2EFE6;font-size:15px;outline:none;padding:14px 0">
+              </div>
+            </div>
+          </sc-for>
+        </section>
+
+        <div style="margin-top:{{gap}}px;display:flex;flex-direction:{{formDir}};align-items:{{ctaAlign}};gap:{{gap}}px">
+          <button type="button" onClick="{{submitDiscover}}" style="flex:none;min-height:{{inputH}}px;border:0;cursor:{{ctaCursor}};background:{{ctaBg}};color:{{ctaFg}};border-radius:20px;padding:0 44px;font-weight:700;font-stretch:115%;letter-spacing:0.18em;text-transform:uppercase;font-size:13px">Find</button>
+          <p style="margin:0;font-size:14px;line-height:1.5;color:#8A857C;max-width:56ch;text-wrap:pretty">{{ seedHint }}</p>
+        </div>
+
+        <sc-if value="{{ discoverResults }}" hint-placeholder-val="{{ false }}">
+          <section style="margin-top:{{gap}}px;background:#1C1C1C;border-radius:20px;padding:8px">
+            <sc-for list="{{ recs }}" as="r" hint-placeholder-count="8">
+              <div style="display:flex;align-items:center;gap:{{gap}}px;padding:12px 14px;border-radius:16px;background:{{ r.rowBg }}">
+                <div style="width:56px;height:56px;flex:none;border-radius:12px;background:{{ r.bg }}"></div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:15px;color:#F2EFE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div>
+                  <div style="margin-top:3px;font-size:12px;color:#8A857C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.artist }}</div>
+                </div>
+                <div style="width:86px;flex:none;text-align:right">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#5AFE59">{{ r.bpm }}</div>
+                  <div style="margin-top:6px;height:2px;background:#141414">
+                    <div style="height:2px;width:{{ r.barWidth }};background:#00C716"></div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </section>
+        </sc-if>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;grainOpacity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.2,&quot;min&quot;:0,&quot;max&quot;:0.6,&quot;step&quot;:0.01,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Texture&quot;},&quot;trackCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:42,&quot;min&quot;:10,&quot;max&quot;:200,&quot;step&quot;:6,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Sequence&quot;}}">
+const TRACKS = [
+  ["Ember Hours","Nadia Volk"],["Low Tide Static","Corvo"],["Blackout Motel","The Pale Signal"],["Iron Rain","Halvard"],
+  ["Copper Wire","Sena Marlowe"],["Rust Belt Sunday","Foxhole Choir"],["Warm Front","Delia Sang"],["Slow Amber","Tinman Radio"],
+  ["Paper Lanterns","Yuki Brandt"],["Saffron Lot","The Long Way Down"],["Golden Hour Freight","Ari Petrov"],["Beeswax","Mona Lisk"],
+  ["Field of Rye","Skovgaard"],["Meadow Signal","Cassia Bloom"],["Green Room","Ilan Reyes"],["Fern Alphabet","Nordwest"],
+  ["Moss Letter","Halcyon Fig"],["Cold Spring","Vera Ito"],["Sea Glass","Rhodes & Perl"],["Harbour Lights Out","Tomas Kir"],
+  ["Deep Channel","Anouk Frey"],["Blue Ridge Line","The Quiet Fleet"],["Night Ferry","Sela Okoye"],["Cobalt Letter","Mirren"],
+  ["Indigo Tape","Juno Sabat"],["Violet Sleeper","Kaspar Lind"],["Lilac Interior","Nour Bahri"],["Orchid Static","Sable Ten"],
+  ["Magenta Weather","Ivy Kolar"],["Rose Static","The Frayed Ends"],["Ash Blossom","Petra Vane"],["Salt Print","Odd Lumen"],
+  ["Concrete Garden","Bram Elias"],["Grey Market","Nils Auber"],["Silver Halide","Tess Morrow"],["Winter Linen","Adélie"],
+  ["Chalk Line","Rune Sandt"],["Bone China","Mira Ostrow"],["Snow Blind","Cal Ferrier"],["Overexposed","Hana Wilde"],
+  ["Milk Glass","Osian Grey"],["White Noise Sunday","Lucia Ferrand"],["Bleached Film","Tomo Ridge"],["Last Light Meter","Erika Solano"],
+  ["Full Spectrum","Peregrine Nine"]
+];
+const RECS = [
+  ["Dust and Neon","Nadia Volk",92],["Radio Silence Hill","Corvo",104],["Second Shift","Delia Sang",118],
+  ["Long Exposure","Ari Petrov",126],["Harbour Fog","Tomas Kir",134],["Cold Channel","Anouk Frey",140],
+  ["Sleeper Car","Kaspar Lind",148],["Halide","Tess Morrow",156]
+];
+const REC_COLORS = ["#5A1B14","#8A3A12","#B9821B","#C2B32A","#3E8F3C","#1B6E74","#1F4E96","#4A2E86"];
+
+function hsl2hex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const to = v => Math.round(255 * v).toString(16).padStart(2, "0");
+  return ("#" + to(f(0)) + to(f(8)) + to(f(4))).toUpperCase();
+}
+
+function lum(hex) {
+  const v = i => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) / 255;
+  const c = i => { const x = v(i); return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+  return 0.2126 * c(0) + 0.7152 * c(1) + 0.0722 * c(2);
+}
+
+class Component extends DCLogic {
+  state = {
+    mobile: typeof window !== "undefined" && window.innerWidth <= 760,
+    vw: typeof window !== "undefined" ? window.innerWidth : 1440,
+    mode: "order",
+    phase: "done",
+    url: "",
+    orderError: false,
+    hover: null,
+    tap: null,
+    revealed: [],
+    seedUrl: "",
+    seedError: false,
+    seedGrid: false,
+    slots: [null, null, null],
+    discoverDone: false
+  };
+
+  componentDidMount() {
+    this._onResize = () => {
+      const m = window.innerWidth <= 760;
+      this.setState({ mobile: m, vw: window.innerWidth });
+    };
+    window.addEventListener("resize", this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener("resize", this._onResize);
+    (this._timers || []).forEach(clearTimeout);
+  }
+
+  count() {
+    const n = parseInt(this.props.trackCount, 10);
+    return Math.max(10, Math.min(200, isNaN(n) ? 42 : n));
+  }
+
+  startProcessing() {
+    (this._timers || []).forEach(clearTimeout);
+    this._timers = [];
+    const n = this.count();
+    const shuffled = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
+    this.setState({ phase: "processing", revealed: shuffled.slice(0, Math.round(n * 0.18)) });
+    this._timers.push(setTimeout(() => this.setState({ revealed: shuffled.slice(0, Math.round(n * 0.42)) }), 900));
+    this._timers.push(setTimeout(() => this.setState({ revealed: shuffled.slice(0, Math.round(n * 0.66)) }), 1700));
+    this._timers.push(setTimeout(() => this.setState({ phase: "done", revealed: [] }), 2600));
+  }
+
+  covers() {
+    const n = this.count();
+    return Array.from({ length: n }, (_, p) => {
+      const t = n === 1 ? 0 : p / (n - 1);
+      const neutral = p % 7 === 5;
+      const hue = Math.round(8 + t * 322);
+      const sat = neutral ? 5 : 62 - Math.sin(t * Math.PI) * 14;
+      const light = 11 + t * 74;
+      const track = TRACKS[p % TRACKS.length];
+      return { p, hex: hsl2hex(hue, sat, light), title: track[0], artist: track[1] };
+    });
+  }
+
+  // Deterministic "original playlist order": stable scramble of the sorted set.
+  unsorted() {
+    const c = this.covers();
+    return c.slice().sort((a, b) => ((a.p * 7919) % 101) - ((b.p * 7919) % 101));
+  }
+
+  setSlot(i, next) {
+    const slots = this.state.slots.slice();
+    slots[i] = next;
+    this.setState({ slots });
+  }
+
+  tapSeedCover(cover) {
+    const slots = this.state.slots.slice();
+    const at = slots.findIndex(s => s && s.from === "playlist" && s.p === cover.p);
+    if (at > -1) { slots[at] = null; this.setState({ slots }); return; }
+    const free = slots.findIndex(s => !s);
+    if (free === -1) return;
+    slots[free] = { from: "playlist", p: cover.p, title: cover.title };
+    this.setState({ slots });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const mobile = s.mobile;
+    const gap = mobile ? 12 : 16;
+    const cols = mobile ? 3 : 5;
+    const n = this.count();
+    const covers = this.covers();
+    const processing = s.phase === "processing";
+
+    const rows = [];
+    for (let r = 0; r * cols < n; r++) {
+      const slice = covers.slice(r * cols, r * cols + cols);
+      const visual = r % 2 === 1 ? slice.slice().reverse() : slice;
+      rows.push({
+        cells: visual.map(c => {
+          const dark = processing && s.revealed.indexOf(c.p) === -1;
+          const revealed = !processing && (s.hover === c.p || s.tap === c.p);
+          return {
+            index: String(c.p + 1).padStart(2, "0"),
+            indexColor: dark ? "#3A3A3A" : (lum(c.hex) > 0.45 ? "rgba(20,20,20,0.88)" : "rgba(242,239,230,0.92)"),
+            bg: dark ? "#1C1C1C" : c.hex,
+            hex: c.hex,
+            title: dark ? "" : c.title,
+            artist: dark ? "" : c.artist,
+            lift: revealed && !mobile ? "translateY(-6px)" : "none",
+            labelOpacity: revealed ? 1 : 0,
+            onEnter: mobile ? null : () => this.setState({ hover: c.p }),
+            onLeave: mobile ? null : () => this.setState({ hover: null }),
+            onTap: () => this.setState({ tap: s.tap === c.p ? null : c.p })
+          };
+        }),
+        arrow: r * cols + cols < n ? "\u2198" : false,
+        arrowJustify: r % 2 === 0 ? "flex-end" : "flex-start"
+      });
+    }
+    rows.forEach((row, i) => { if (row.arrow) row.arrow = i % 2 === 0 ? "\u2198" : "\u2199"; });
+
+    const last = covers[covers.length - 1];
+    const stats = [
+      { label: "Items", value: String(n) },
+      { label: "Lum_range", value: covers[0].hex + " \u2014 " + (last ? last.hex : "#F2EFE6") },
+      { label: "Tempo", value: "118 BPM" },
+      { label: "Dominant hue", value: "212\u00B0" }
+    ];
+
+    const slotLabels = ["Song 1", "Song 2 (optional)", "Song 3 (optional)"];
+    const seedCount = s.slots.filter(Boolean).length;
+    const hint = seedCount === 0
+      ? "Set at least one seed to search. You can pick covers above, type titles, or mix both."
+      : seedCount === 1
+        ? "With one seed the results stay close to that track."
+        : seedCount === 2
+          ? "With two seeds the results sit between them."
+          : "With three seeds the results sit between all three.";
+
+    const vw = s.vw || 1440;
+    const wordmarkSize = mobile ? Math.max(34, Math.min(54, Math.round(vw * 0.135))) : Math.max(52, Math.min(116, Math.round((vw - 48) * 0.088)));
+    const scanLine = Math.max(1, Math.round(wordmarkSize / 26));
+    const grain = this.props.grainOpacity == null ? 0.34 : this.props.grainOpacity;
+
+    return {
+      gap,
+      padOuter: mobile ? 12 : 24,
+      padBottom: mobile ? 40 : 56,
+      headerDir: mobile ? "column" : "row",
+      headerAlign: mobile ? "stretch" : "center",
+      wordmarkSize,
+      scanLine,
+      scanGap: scanLine * 3,
+      grainOpacity: grain,
+      grainOpacityCoarse: grain * 0.55,
+      toggleWidth: mobile ? "100%" : "auto",
+      toggleH: mobile ? 48 : 46,
+      inputH: mobile ? 52 : 56,
+      formDir: mobile ? "column" : "row",
+      statCols: mobile ? "1fr 1fr" : "repeat(4,1fr)",
+      coverCols: "repeat(" + cols + ",1fr)",
+      seedCols: "repeat(" + (mobile ? 5 : 12) + ",1fr)",
+      ctaAlign: mobile ? "stretch" : "center",
+
+      isOrder: s.mode === "order",
+      isDiscover: s.mode === "discover",
+      orderBg: s.mode === "order" ? "#36E339" : "transparent",
+      orderFg: s.mode === "order" ? "#141414" : "#00AE11",
+      discoverBg: s.mode === "discover" ? "#36E339" : "transparent",
+      discoverFg: s.mode === "discover" ? "#141414" : "#00AE11",
+      setOrder: () => this.setState({ mode: "order" }),
+      setDiscover: () => this.setState({ mode: "discover" }),
+
+      progressOpacity: processing ? 1 : 0,
+      isEmpty: s.mode === "order" && s.phase === "empty",
+      hasResult: s.mode === "order" && s.phase !== "empty",
+      orderError: s.orderError === true,
+      url: s.url,
+      onUrl: e => this.setState({ url: e.target.value, orderError: false }),
+      submitOrder: e => {
+        e.preventDefault();
+        if (!/open\.spotify\.com\/playlist/i.test(this.state.url)) { this.setState({ orderError: true }); return; }
+        this.setState({ orderError: false });
+        this.startProcessing();
+      },
+
+      rows,
+      stats,
+
+      seedUrl: s.seedUrl,
+      onSeedUrl: e => this.setState({ seedUrl: e.target.value, seedError: false }),
+      seedError: s.seedError === true,
+      seedGridLoaded: s.seedGrid === true,
+      submitSeedPlaylist: e => {
+        e.preventDefault();
+        if (!/open\.spotify\.com\/playlist/i.test(this.state.seedUrl)) { this.setState({ seedError: true, seedGrid: false }); return; }
+        this.setState({ seedError: false, seedGrid: true });
+      },
+      playlistCovers: this.unsorted().map(c => {
+        const at = s.slots.findIndex(sl => sl && sl.from === "playlist" && sl.p === c.p);
+        return {
+          bg: c.hex,
+          border: at > -1 ? "2px solid #43EC44" : "2px solid transparent",
+          ring: at > -1 ? "0 0 0 1px #00C716" : "none",
+          badge: at > -1 ? String(at + 1) : "",
+          badgeOpacity: at > -1 ? 1 : 0,
+          onTap: () => this.tapSeedCover(c)
+        };
+      }),
+
+      seeds: s.slots.map((slot, i) => ({
+        label: slotLabels[i],
+        labelColor: slot ? "#5AFE59" : "#8A857C",
+        index: String(i + 1).padStart(2, "0"),
+        value: slot ? slot.title : "",
+        readOnly: !!(slot && slot.from === "playlist"),
+        border: slot ? "#43EC44" : "#00C716",
+        placeholder: i === 0 ? "Type a song title" : "Optional",
+        onChange: e => {
+          const v = e.target.value;
+          this.setSlot(i, v ? { from: "manual", title: v } : null);
+        }
+      })),
+
+      seedHint: hint,
+      ctaBg: seedCount > 0 ? "#36E339" : "#1C1C1C",
+      ctaFg: seedCount > 0 ? "#141414" : "#00AE11",
+      ctaCursor: seedCount > 0 ? "pointer" : "not-allowed",
+      submitDiscover: () => { if (seedCount > 0) this.setState({ discoverDone: true }); },
+      discoverResults: s.mode === "discover" && s.discoverDone && seedCount > 0,
+      recs: RECS.map((r, i) => ({
+        title: r[0], artist: r[1], bpm: String(r[2]),
+        barWidth: Math.round(((r[2] - 80) / 90) * 100) + "%",
+        bg: REC_COLORS[i % REC_COLORS.length],
+        rowBg: i % 2 === 0 ? "#212121" : "transparent"
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

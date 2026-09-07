@@ -1,0 +1,7 @@
+.error {
+  margin: var(--gap) 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--green-2);
+  text-wrap: pretty;
+}

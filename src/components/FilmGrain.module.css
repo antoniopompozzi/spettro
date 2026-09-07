@@ -1,0 +1,24 @@
+/*
+ * Two stacked SVG turbulence layers: a fine one in `overlay` for the pellicle
+ * speckle, a coarse one in `soft-light` for the slower blotching underneath.
+ */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background-repeat: repeat;
+}
+
+.fine {
+  mix-blend-mode: overlay;
+  opacity: var(--grain-fine);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+.coarse {
+  z-index: 61;
+  mix-blend-mode: soft-light;
+  opacity: var(--grain-coarse);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='h'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23h)'/%3E%3C/svg%3E");
+}

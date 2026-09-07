@@ -1,0 +1,21 @@
+.track {
+  height: 2px;
+  overflow: hidden;
+  background: var(--surface);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.active {
+  opacity: 1;
+}
+
+.beam {
+  height: 2px;
+  width: 30%;
+  background: var(--green-1);
+}
+
+.active .beam {
+  animation: spettro-scan 1.15s linear infinite;
+}

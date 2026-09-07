@@ -1,0 +1,58 @@
+.row {
+  display: grid;
+  grid-template-columns: repeat(var(--cover-cols), 1fr);
+  gap: var(--gap);
+}
+
+/*
+ * The serpentine turn. The band is the whole space between two rows and the
+ * glyph is centred inside it, so the arrow never reaches the covers above or
+ * below. The span must be a block: an inline box is sized from font metrics
+ * (~1.32em), which is what used to push the arrow into the neighbouring rows.
+ */
+.turn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.arrow {
+  display: block;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1;
+  /* Same fine density as the wordmark: one lit line every three pixels. */
+  --scan-line: 1px;
+  --scan-period: 3px;
+}
+
+/*
+ * The stripes run across the arrow's stroke, not along it: the gradient axis
+ * follows the shaft, so the bands sit perpendicular to it and the head and
+ * shaft stay legible as short parallel dashes.
+ */
+.downRight {
+  --scan-angle: 135deg;
+}
+
+.downLeft {
+  --scan-angle: 45deg;
+}
+
+@media (min-width: 761px) {
+  .turn {
+    height: 48px;
+  }
+
+  .arrow {
+    font-size: 36px;
+  }
+}
+
+.right {
+  justify-content: flex-end;
+}
+
+.left {
+  justify-content: flex-start;
+}
