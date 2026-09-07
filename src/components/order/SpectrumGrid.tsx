@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useGridColumns } from '@/hooks/useMediaQuery';
 import type { SequencedTrack, Track } from '@/lib/types';
@@ -20,7 +20,6 @@ interface SpectrumGridProps {
  */
 export function SpectrumGrid({ tracks, revealed }: SpectrumGridProps) {
   const columns = useGridColumns();
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     const sequenced: SequencedTrack[] = tracks.map((track, position) => ({
@@ -50,8 +49,6 @@ export function SpectrumGrid({ tracks, revealed }: SpectrumGridProps) {
                   key={track.id}
                   track={track}
                   loaded={revealed === null || revealed.has(track.id)}
-                  open={openId === track.id}
-                  onToggle={() => setOpenId((current) => (current === track.id ? null : track.id))}
                 />
               ))}
             </div>

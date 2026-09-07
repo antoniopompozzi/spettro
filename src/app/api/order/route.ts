@@ -3,8 +3,8 @@ import { OrderError } from '@/lib/server/errors';
 import { sequenceTracks } from '@/lib/server/sequence';
 import { fetchPlaylistTracks } from '@/lib/server/spotify';
 
-// node-vibrant decodes images with Node APIs, and the token cache wants a
-// process that outlives one request.
+// Cover decoding uses Node APIs, and the token cache wants a process that
+// outlives one request.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 

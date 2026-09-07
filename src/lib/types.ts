@@ -22,8 +22,15 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
-  /** Dominant cover colour as `#RRGGBB`, read off the artwork server-side. */
+  /**
+   * The cover's dominant chromatic colour as `#RRGGBB` — a colour that is
+   * actually in the artwork, not an average of it.
+   */
   color: string;
+  /** OKLCH hue in degrees; `null` for a cover with no meaningful hue. */
+  hue?: number | null;
+  /** Mean OKLab lightness of the whole cover, 0..1. Orders within a hue band. */
+  lightness?: number;
   /**
    * Rounded tempo from ReccoBeats. `null` means nobody knows it — never `0`,
    * which would read as a real measurement. Such a track stays in the sequence
@@ -32,6 +39,9 @@ export interface Track {
   bpm?: number | null;
   /** Spotify album art at the size the grid needs. */
   coverUrl?: string | null;
+  /** The track on Spotify: every datum shown has to lead back to the service. */
+  spotifyUrl?: string | null;
+  explicit?: boolean;
   /** The full ReccoBeats reading, kept for Discover; `null` when it has none. */
   features?: AudioFeatures | null;
 }

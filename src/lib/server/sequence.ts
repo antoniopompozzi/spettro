@@ -1,10 +1,10 @@
 import 'server-only';
 
-import { luminance } from '@/lib/color';
+import { bandIndex } from '@/lib/spectrum';
 import type { OrderResponse, Track } from '@/lib/types';
 
 import { mapLimit } from './concurrency';
-import { dominantColor } from './cover';
+import { coverColour, type CoverColour } from './cover';
 import { fetchAudioFeatures } from './reccobeats';
 import type { SpotifyTrack } from './spotify';
 
@@ -12,8 +12,15 @@ import type { SpotifyTrack } from './spotify';
 const COVER_CONCURRENCY = 6;
 
 /**
- * Reads every cover and lays the tracks out dark to light, which is the whole
- * point of Order.
+ * Reads every cover and lays the tracks out along the spectrum, which is the
+ * whole point of Order.
+ *
+ * The sequence walks the eleven named bands of `@/lib/spectrum` in order, and
+ * sorts each band from its darkest cover to its lightest. Hue leads because
+ * that is what "spectrum" means and what the eye groups by: two covers that
+ * both read as blue belong side by side, whatever their brightness. The three
+ * achromatic bands open the grid, and because each is sorted by lightness too,
+ * black, grey and white read as one gradient rather than three blocks.
  *
  * Colour comes from Spotify's own artwork — the only artwork the app may use,
  * and the only one that stays put: a text search against another catalogue
@@ -35,25 +42,34 @@ export async function sequenceTracks(found: readonly SpotifyTrack[]): Promise<Or
   );
 
   const read = await mapLimit(found, COVER_CONCURRENCY, async (track) => {
-    const color = track.cover ? await dominantColor(track.cover) : null;
-    if (!color) {
+    const swatch = track.swatch ?? track.cover;
+    const colour = swatch ? await coverColour(swatch) : null;
+    if (!colour) {
       console.warn(`[order] no cover colour for "${track.title}" — ${track.artist}`);
     }
-    return { track, color };
+    return { track, colour };
   });
 
   const tracks: Track[] = read
-    .filter((entry): entry is { track: SpotifyTrack; color: string } => entry.color !== null)
-    .sort((a, b) => luminance(a.color) - luminance(b.color))
-    .map(({ track, color }) => {
+    .filter((entry): entry is { track: SpotifyTrack; colour: CoverColour } => entry.colour !== null)
+    .sort((a, b) => {
+      const band =
+        bandIndex(a.colour.hue, a.colour.lightness) - bandIndex(b.colour.hue, b.colour.lightness);
+      return band !== 0 ? band : a.colour.lightness - b.colour.lightness;
+    })
+    .map(({ track, colour }) => {
       const audio = track.spotifyId ? (features.get(track.spotifyId) ?? null) : null;
       return {
         id: track.id,
         title: track.title,
         artist: track.artist,
-        color,
+        color: colour.color,
+        hue: colour.hue,
+        lightness: colour.lightness,
         bpm: audio?.tempo == null ? null : Math.round(audio.tempo),
         coverUrl: track.cover,
+        spotifyUrl: track.spotifyUrl,
+        explicit: track.explicit,
         features: audio,
       };
     });

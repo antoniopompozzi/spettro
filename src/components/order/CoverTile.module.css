@@ -1,62 +1,89 @@
 .tile {
   display: block;
   width: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: center;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
+  min-width: 0;
+  text-align: left;
 }
 
+/*
+ * The frame. It holds the square and the corner radius Spotify prescribes for
+ * artwork; nothing is ever drawn on top of it.
+ */
 .plate {
   display: block;
   position: relative;
   aspect-ratio: 1 / 1;
-  border-radius: var(--radius-cover);
+  border-radius: var(--radius-artwork);
   overflow: hidden;
   background: var(--surface);
-  transition: transform 180ms ease, background-color 400ms ease;
 }
 
-.revealing .plate {
+/* The extracted colour, sitting behind the artwork and showing until it loads. */
+.wash {
+  position: absolute;
+  inset: 0;
+  transition: background-color 400ms ease;
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * Only the colour animates in. The artwork itself is never scaled, faded or
+ * moved: it appears when it decodes, over a plate already tinted with the
+ * colour it produced, so nothing jumps.
+ */
+.revealing .wash {
   animation: spettro-reveal 320ms ease both;
 }
 
-@media (hover: hover) {
-  .tile:hover .plate,
-  .tile:focus-visible .plate {
-    transform: translateY(-6px);
-  }
+.band {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 400ms ease;
 }
 
-.index {
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  font-size: 11px;
-  color: var(--ink, #3a3a3a);
+.tech,
+.meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 15px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+.tech {
+  margin-top: 6px;
 }
 
 .hex {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 6px 10px;
-  background: rgba(20, 20, 20, 0.72);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  opacity: 0;
-  transition: opacity 140ms ease;
+  text-transform: uppercase;
 }
 
-.tile:hover .hex,
-.tile:focus-visible .hex,
-.open .hex {
-  opacity: 1;
+.meta {
+  margin-top: 4px;
+}
+
+.explicit {
+  flex: none;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--surface-raised);
+  color: var(--text-dim);
+  font-size: 9px;
+  line-height: 14px;
 }
 
 .title,
@@ -68,9 +95,26 @@
 }
 
 .title {
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 12px;
   color: var(--text);
+}
+
+/*
+ * The only interactive element on the tile, which is why the hover feedback
+ * lives here rather than on the artwork: lifting or scaling the cover would be
+ * animating it.
+ */
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--green-1);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .artist {
@@ -79,8 +123,16 @@
   color: var(--text-dim);
 }
 
-/* Reserve the two caption lines while a cover is still being read. */
+/* Reserve every caption line while a cover is still being read. */
 .pending .title,
 .pending .artist {
   visibility: hidden;
+}
+
+@media (min-width: 761px) {
+  .tech,
+  .meta {
+    font-size: 11px;
+    min-height: 16px;
+  }
 }

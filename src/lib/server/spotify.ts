@@ -16,23 +16,36 @@ export interface SpotifyTrack {
   artist: string;
   /** Album art from Spotify, the only artwork this app is allowed to show. */
   cover: string | null;
+  /** A smaller copy of the same art, enough to read a colour from. */
+  swatch: string | null;
+  /** Where the track lives on Spotify; every shown datum must lead back there. */
+  spotifyUrl: string | null;
+  explicit: boolean;
 }
 
 /**
- * Grid tiles top out around 185 CSS px, so the middle rung of Spotify's ladder
- * (typically 640 / 300 / 64) is the right one: large enough for the grid, and a
- * fraction of the bytes of the largest — which matters when every cover in a
- * playlist has to be fetched and read before anything can be shown.
+ * The artwork is the content here, not decoration, so the grid gets the large
+ * rung of Spotify's ladder (typically 640 / 300 / 64): tiles are around 185 CSS
+ * px, which a 300px image renders soft on a high-density screen.
  */
-const TARGET_COVER_WIDTH = 300;
+const DISPLAY_COVER_WIDTH = 640;
+/**
+ * Colour extraction reads a smaller copy of the same image. The dominant colour
+ * does not change with scale, and the server would otherwise pull four times
+ * the bytes per track for no gain.
+ */
+const SWATCH_COVER_WIDTH = 300;
 
-/** The smallest image that still covers the grid, or the largest if none does. */
-function pickCover(images: Array<{ url: string; width: number | null }> = []): string | null {
+/** The smallest image at or above `want`, or the largest available if none is. */
+function pickCover(
+  images: Array<{ url: string; width: number | null }> = [],
+  want: number,
+): string | null {
   const sized = images
     .filter((image): image is { url: string; width: number } => typeof image.width === 'number')
     .sort((a, b) => a.width - b.width);
   return (
-    sized.find((image) => image.width >= TARGET_COVER_WIDTH)?.url ??
+    sized.find((image) => image.width >= want)?.url ??
     sized[sized.length - 1]?.url ??
     images[0]?.url ??
     null
@@ -49,6 +62,8 @@ interface SpotifyObject {
   id: string | null;
   name?: string;
   type?: string;
+  explicit?: boolean;
+  external_urls?: { spotify?: string };
   artists?: Array<{ name: string }>;
   album?: { images?: Array<{ url: string; width: number | null }> };
 }
@@ -102,12 +117,16 @@ export async function fetchPlaylistTracks(playlistId: string): Promise<SpotifyTr
       const artist = track?.artists?.[0]?.name;
       // Skips podcast episodes, local files and tracks removed from the catalogue.
       if (!track?.name || !artist) continue;
+      const images = track.album?.images;
       tracks.push({
         id: `${track.id ?? 'local'}-${tracks.length}`,
         spotifyId: track.id,
         title: track.name,
         artist,
-        cover: pickCover(track.album?.images),
+        cover: pickCover(images, DISPLAY_COVER_WIDTH),
+        swatch: pickCover(images, SWATCH_COVER_WIDTH),
+        spotifyUrl: track.external_urls?.spotify ?? null,
+        explicit: track.explicit === true,
       });
     }
     url = page.next;

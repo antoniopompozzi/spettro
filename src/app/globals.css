@@ -26,6 +26,12 @@
   --radius: 20px;
   --radius-inner: 16px;
   --radius-cover: 12px;
+  /*
+   * Album artwork only. Spotify's design guidelines prescribe 4px on small and
+   * medium devices and 8px on large ones — a tighter radius than the rest of
+   * the interface, which keeps its own 12px.
+   */
+  --radius-artwork: 4px;
   --gap: 12px;
   --pad-outer: 12px;
   --pad-bottom: 40px;
@@ -42,6 +48,7 @@
 
 @media (min-width: 761px) {
   :root {
+    --radius-artwork: 8px;
     --gap: 16px;
     --pad-outer: 24px;
     --pad-bottom: 56px;

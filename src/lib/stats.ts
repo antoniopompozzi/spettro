@@ -1,4 +1,5 @@
-import { dominantHue } from '@/lib/color';
+import { meanHue } from '@/lib/color';
+import { BANDS, bandIndex } from '@/lib/spectrum';
 import type { Stat, Track } from '@/lib/types';
 
 /** Median, so one track read an octave out does not drag the read-out around. */
@@ -26,21 +27,30 @@ function tempoStat(tracks: readonly Track[]): string {
     : `${median(known)} BPM (${known.length}/${tracks.length})`;
 }
 
+/**
+ * How many of the eleven bands the playlist reaches. This replaced a range of
+ * luminance values: lightness now only orders covers inside a band, so the span
+ * that describes a sequence is how much of the spectrum it actually touches.
+ */
+function spreadStat(tracks: readonly Track[]): string {
+  const bands = new Set<number>();
+  for (const track of tracks) {
+    bands.add(bandIndex(track.hue, track.lightness ?? 0));
+  }
+  return `${bands.size}/${BANDS.length}`;
+}
+
 /** Read-out for a finished sequence. */
 export function sequenceStats(tracks: readonly Track[]): Stat[] {
-  const first = tracks[0];
-  const last = tracks[tracks.length - 1];
+  const hues = tracks
+    .map((track) => track.hue)
+    .filter((hue): hue is number => typeof hue === 'number');
+  const dominant = meanHue(hues);
 
   return [
     { label: 'Items', value: String(tracks.length) },
-    {
-      label: 'Lum_range',
-      value: first && last ? `${first.color} — ${last.color}` : '—',
-    },
+    { label: 'Bands', value: tracks.length === 0 ? '—' : spreadStat(tracks) },
     { label: 'Tempo', value: tempoStat(tracks) },
-    {
-      label: 'Dominant hue',
-      value: `${dominantHue(tracks.map((track) => track.color))}°`,
-    },
+    { label: 'Dominant hue', value: dominant === null ? '—' : `${dominant}°` },
   ];
 }

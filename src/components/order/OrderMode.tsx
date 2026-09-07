@@ -11,6 +11,7 @@ import { sequenceStats } from '@/lib/stats';
 import { EmptyState } from './EmptyState';
 import styles from './OrderMode.module.css';
 import { SpectrumGrid } from './SpectrumGrid';
+import { SpotifyAttribution } from './SpotifyAttribution';
 import { SpotifyConnect } from './SpotifyConnect';
 import { StatsPanel } from './StatsPanel';
 
@@ -85,6 +86,8 @@ export function OrderMode() {
 
       {phase === 'empty' ? <EmptyState /> : null}
       {phase === 'result' ? <StatsPanel stats={stats} /> : null}
+      {/* Wherever Spotify's covers and metadata show, so does its mark. */}
+      {phase === 'empty' ? null : <SpotifyAttribution />}
       {phase === 'processing' || phase === 'result' ? (
         <SpectrumGrid tracks={tracks} revealed={phase === 'processing' ? revealed : null} />
       ) : null}

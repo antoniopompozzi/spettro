@@ -1,0 +1,37 @@
+/*
+ * Spotify requires its mark wherever its metadata or artwork appears, kept
+ * clear of other elements by half the icon's height. The logo renders 96px
+ * wide (the minimum is 70px), which is about 26px tall, so 14px of margin
+ * satisfies the exclusion zone on every side — that margin is the reason the
+ * row is padded the way it is, and nothing may be placed inside it.
+ */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: 4px 18px;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.label {
+  color: var(--text-dim);
+}
+
+.link {
+  display: block;
+  margin: 14px;
+  border-radius: 2px;
+}
+
+/*
+ * The white monochrome mark: the green one is only allowed on black or white,
+ * and this page is #141414. It also keeps Spotify's green off a screen whose
+ * own accent is a different green.
+ */
+.logo {
+  display: block;
+  width: 96px;
+  height: auto;
+}
