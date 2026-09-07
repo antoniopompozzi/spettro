@@ -4,6 +4,7 @@ import { bandIndex } from '@/lib/spectrum';
 import type { OrderResponse, Track } from '@/lib/types';
 
 import { mapLimit } from './concurrency';
+import { debug } from './log';
 import { coverColour, type CoverColour } from './cover';
 import { fetchAudioFeatures } from './reccobeats';
 import type { SpotifyTrack } from './spotify';
@@ -45,7 +46,7 @@ export async function sequenceTracks(found: readonly SpotifyTrack[]): Promise<Or
     const swatch = track.swatch ?? track.cover;
     const colour = swatch ? await coverColour(swatch) : null;
     if (!colour) {
-      console.warn(`[order] no cover colour for "${track.title}" — ${track.artist}`);
+      debug(`[order] no cover colour for "${track.title}" — ${track.artist}`);
     }
     return { track, colour };
   });
@@ -74,13 +75,17 @@ export async function sequenceTracks(found: readonly SpotifyTrack[]): Promise<Or
       };
     });
 
+  const dropped = found.length - tracks.length;
+  // The count is worth keeping; which covers failed is not, in production.
+  if (dropped > 0) console.warn(`[order] ${dropped} of ${found.length} covers could not be read`);
+
   const withTempo = tracks.filter((track) => track.bpm !== null).length;
   return {
     tracks,
     meta: {
       total: found.length,
       sequenced: tracks.length,
-      dropped: found.length - tracks.length,
+      dropped,
       withTempo,
       withoutTempo: tracks.length - withTempo,
     },

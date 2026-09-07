@@ -82,10 +82,13 @@ export default function PrivacyPage() {
         anything of that kind. There is no analytics, no advertising and no tracking here.
       </p>
       <p>
-        One thing worth naming plainly: when a cover cannot be read or a tempo is missing,
-        Spettro writes a diagnostic line to its own server log naming that track, and it logs
-        the playlist identifier with a count of what was sequenced. Those lines are not
-        collected, indexed or kept anywhere by Spettro.
+        <strong>Nothing about your music reaches the server log.</strong> Spettro records
+        counts — how many tracks were sequenced, how many covers could not be read — and
+        never a track title, an artist, or the identifier of the playlist you gave it. When
+        something fails unexpectedly it logs the kind of failure and not its details, because
+        the details would quote the address it failed on and those addresses carry
+        identifiers. The detailed diagnostics exist only when Spettro is run on a
+        developer&rsquo;s own machine.
       </p>
 
       <h2>Cookies</h2>

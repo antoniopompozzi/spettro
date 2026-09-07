@@ -1,5 +1,6 @@
 import { spotifyPlaylistId } from '@/lib/playlist';
 import { OrderError } from '@/lib/server/errors';
+import { debug, failureDetail } from '@/lib/server/log';
 import { sequenceTracks } from '@/lib/server/sequence';
 import { fetchPlaylistTracks } from '@/lib/server/spotify';
 
@@ -33,13 +34,15 @@ export async function POST(request: Request) {
       );
     }
 
-    console.info(`[order] ${playlistId}:`, payload.meta);
+    // Counts only: which playlist it was stays in development.
+    console.info('[order] sequenced', payload.meta);
+    debug(`[order] playlist ${playlistId}`);
     return Response.json(payload);
   } catch (error) {
     if (error instanceof OrderError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    console.error('[order] unexpected failure', error);
+    console.error('[order] unexpected failure', failureDetail(error));
     return Response.json(
       { error: 'Something went wrong while reading that playlist. Try again.' },
       { status: 500 },
