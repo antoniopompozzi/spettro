@@ -203,6 +203,16 @@ change one and the other must follow.
 - Band counts should be read **per distinct cover, not per track**. Eight tracks
   from one album inflate a band and look like a mis-tuned range; they are not.
 
+Playlists used for verification so far, both owned by the account that signs in
+(anything else is a 403):
+
+- `6pE9NUVvRWxg427FpVMSow` — "mix 4 (ritmo)", ~45 tracks, rap-heavy. Lots of
+  black-and-white artwork, so it exercises the achromatic bands and is the one
+  the reds problem showed up on.
+- `3bfHFW9vZBk9hvxqnzVJsz` — "bailar", 24 tracks, Latin. Colourful, no
+  achromatic covers at all, and it contains eight tracks from one album — the
+  case that makes a hue band look over-crowded when it is not.
+
 Useful OKLCH anchors: red 29°, orange 53°, gold 95°, yellow 110°, green 142°,
 turquoise 185°, cyan 195°, sky 226°, blue 264°, indigo 302°, purple 328°,
 pink 352°. Indigo and blue-violet land within a degree of each other and part on
