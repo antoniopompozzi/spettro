@@ -9,8 +9,23 @@ import { coverColour, type CoverColour } from './cover';
 import { fetchAudioFeatures } from './reccobeats';
 import type { SpotifyTrack } from './spotify';
 
-/** Covers are read a handful at a time: enough to be quick, easy on the CDN. */
-const COVER_CONCURRENCY = 6;
+/**
+ * How many covers are fetched from Spotify's CDN at once.
+ *
+ * Lowered from 6 to 4 for the deploy. On this machine the app talks to
+ * `i.scdn.co` from one address that nothing else is using; on Vercel it shares
+ * an outbound address with every other project on the same infrastructure, so
+ * the burst that a fifty-track playlist opens is not the only burst arriving
+ * from it. Four keeps the same work going with a third less of it in flight at
+ * any instant.
+ *
+ * This is a guess at the shape of the problem, not a tuned value: the evidence
+ * for it is a run that dropped 30 of 50 covers after a session of hammering
+ * the CDN, and recovered completely seconds later. The timeout in `cover.ts`
+ * is deliberately untouched at 8s — that one waits for real numbers from
+ * `meta.dropped` in production rather than a guess made here.
+ */
+const COVER_CONCURRENCY = 4;
 
 /**
  * Reads every cover and lays the tracks out along the spectrum, which is the

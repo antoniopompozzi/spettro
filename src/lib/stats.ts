@@ -40,8 +40,16 @@ function spreadStat(tracks: readonly Track[]): string {
   return `${bands.size}/${BANDS.length}`;
 }
 
-/** Read-out for a finished sequence. */
-export function sequenceStats(tracks: readonly Track[]): Stat[] {
+/**
+ * Read-out for a finished sequence.
+ *
+ * `dropped` counts tracks whose artwork could not be read, and it appears
+ * only when it is not zero. On a healthy run there is nothing to say and the
+ * panel keeps its four figures; when Spotify's CDN is slow enough to cost
+ * covers, the number that explains a short grid is on screen instead of
+ * buried in the API response.
+ */
+export function sequenceStats(tracks: readonly Track[], dropped = 0): Stat[] {
   const hues = tracks
     .map((track) => track.hue)
     .filter((hue): hue is number => typeof hue === 'number');
@@ -52,5 +60,6 @@ export function sequenceStats(tracks: readonly Track[]): Stat[] {
     { label: 'Bands', value: tracks.length === 0 ? '—' : spreadStat(tracks) },
     { label: 'Tempo', value: tempoStat(tracks) },
     { label: 'Dominant hue', value: dominant === null ? '—' : `${dominant}°` },
+    ...(dropped > 0 ? [{ label: 'Covers unread', value: String(dropped) }] : []),
   ];
 }

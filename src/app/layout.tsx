@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Archivo, IBM_Plex_Mono, Zen_Dots } from 'next/font/google';
 
 import { FilmGrain } from '@/components/FilmGrain';
+import { PreloadResources } from '@/components/PreloadResources';
 import { baseUrl } from '@/lib/server/base-url';
 
 import './globals.css';
@@ -102,6 +103,7 @@ export default function RootLayout({
         <a className="skipLink" href="#main">
           Skip to main content
         </a>
+        <PreloadResources />
         <FilmGrain />
         {children}
       </body>
