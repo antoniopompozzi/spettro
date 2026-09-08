@@ -48,6 +48,12 @@ export function useOrderSequence() {
   const [tracks, setTracks] = useState<readonly Track[]>([]);
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The run's tally. Only `dropped` is shown, and only when it is not zero,
+   * but the whole object is kept: it is what the read-out would need to say
+   * anything more about a run without asking the server again.
+   */
+  const [meta, setMeta] = useState<OrderResponse['meta'] | null>(null);
 
   const interval = useRef<number | null>(null);
   const settle = useRef<number | null>(null);
@@ -112,6 +118,7 @@ export function useOrderSequence() {
         if (runId.current !== run) return;
 
         setTracks(body.tracks);
+        setMeta(body.meta ?? null);
         reveal(body.tracks);
       } catch (cause) {
         if (runId.current !== run || controller.signal.aborted) return;
@@ -119,6 +126,7 @@ export function useOrderSequence() {
         setPhase('empty');
         setTracks([]);
         setRevealed(new Set());
+        setMeta(null);
         setError(cause instanceof Error ? cause.message : GENERIC_FAILURE);
       }
     },
@@ -132,8 +140,9 @@ export function useOrderSequence() {
     setPhase('empty');
     setTracks([]);
     setRevealed(new Set());
+    setMeta(null);
     setError(null);
   }, [stop]);
 
-  return { phase, revealed, tracks, error, setError, start, reset };
+  return { phase, revealed, tracks, meta, error, setError, start, reset };
 }

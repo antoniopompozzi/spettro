@@ -22,8 +22,8 @@ const NOT_CONNECTED = 'Connect your Spotify account first — Spettro reads play
 export function OrderMode() {
   const [url, setUrl] = useState('');
   const [connected, setConnected] = useState<boolean | null>(null);
-  const { phase, revealed, tracks, error, setError, start, reset } = useOrderSequence();
-  const stats = useMemo(() => sequenceStats(tracks), [tracks]);
+  const { phase, revealed, tracks, meta, error, setError, start, reset } = useOrderSequence();
+  const stats = useMemo(() => sequenceStats(tracks, meta?.dropped ?? 0), [tracks, meta]);
 
   const refreshSession = useCallback(
     () =>
