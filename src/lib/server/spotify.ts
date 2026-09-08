@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { isConfidentMatch } from '@/lib/match';
 import { isSpotifyImageUrl } from '@/lib/spotify-cdn';
 
 import { OrderError } from './errors';
@@ -157,4 +158,101 @@ export async function fetchPlaylistTracks(playlistId: string): Promise<SpotifyTr
   }
 
   return tracks;
+}
+
+/**
+ * Spotify caps this app's search at ten results however many are asked for —
+ * a development-mode limit on the app, not a parameter. Asking for exactly ten
+ * keeps the request honest about what will come back.
+ */
+const SEARCH_LIMIT = 10;
+
+/**
+ * Spotify's query parser reads `:` as a field filter and `"` as a phrase, so a
+ * title carrying either would search for something other than itself.
+ */
+const stripQuerySyntax = (value: string): string =>
+  value.replace(/["':]/g, ' ').replace(/\s+/g, ' ').trim();
+
+interface SearchResponse {
+  tracks?: { items?: SpotifyObject[] };
+}
+
+/**
+ * The one track in Spotify's catalogue that a title and artist name, or `null`.
+ *
+ * This is the bridge Discover stands on: Last.fm answers in text, and a colour
+ * and a tempo can only be read once that text is a Spotify id. Everything the
+ * ranking uses afterwards comes from the record this picks, so picking the
+ * wrong one is not a cosmetic error — it hands a candidate somebody else's
+ * artwork and ranks it on the colour of that.
+ *
+ * Hence the check on the way out. Spotify's search always answers something,
+ * ordered by popularity, so the top hit for a title it does not have is simply
+ * the most popular track that shares a word with it. Results are taken in the
+ * order Spotify ranks them and the first confident match wins; if none of the
+ * ten is confident, the candidate is dropped rather than kept on the best of a
+ * bad set.
+ *
+ * `artist` is optional because a seed typed by hand is only a title. Without one
+ * there is nothing to cross-check against, so the title alone has to carry the
+ * match and Spotify's own popularity ordering breaks the tie — which is the
+ * behaviour a person typing a bare song title expects.
+ */
+export async function searchTrack(title: string, artist?: string): Promise<SpotifyTrack | null> {
+  const terms = stripQuerySyntax(artist ? `${title} ${artist}` : title);
+  if (!terms) return null;
+
+  const url = `${API_BASE}/search?${new URLSearchParams({
+    q: terms,
+    type: 'track',
+    limit: String(SEARCH_LIMIT),
+  })}`;
+
+  let page: SearchResponse;
+  try {
+    const response = await fetch(url, {
+      headers: { authorization: `Bearer ${await userAccessToken()}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    // These two are true of the whole run, not of this candidate: failing them
+    // quietly would empty the pool one silent drop at a time.
+    if (response.status === 401) {
+      throw new OrderError(401, 'That Spotify connection has expired. Connect your account again.');
+    }
+    if (response.status === 429) {
+      throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
+    }
+    if (!response.ok) {
+      console.warn(`[spotify] search answered ${response.status}`);
+      return null;
+    }
+    page = (await response.json()) as SearchResponse;
+  } catch (cause) {
+    if (cause instanceof OrderError) throw cause;
+    console.warn('[spotify] search failed to reach the API');
+    return null;
+  }
+
+  for (const found of page.tracks?.items ?? []) {
+    const credited = found?.artists?.[0]?.name;
+    if (!found?.id || !found.name || !credited) continue;
+    if (!isConfidentMatch({ title, artist: artist ?? credited }, { title: found.name, artist: credited })) {
+      continue;
+    }
+
+    const images = found.album?.images;
+    return {
+      id: found.id,
+      spotifyId: found.id,
+      title: found.name,
+      artist: credited,
+      cover: pickCover(images, DISPLAY_COVER_WIDTH),
+      swatch: pickCover(images, SWATCH_COVER_WIDTH),
+      spotifyUrl: found.external_urls?.spotify ?? null,
+      explicit: found.explicit === true,
+    };
+  }
+  return null;
 }
