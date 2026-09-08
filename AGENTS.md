@@ -222,6 +222,10 @@ reporting four moderates is the correct position, not an oversight.
 ## Working conventions
 
 - A dedicated branch per part; one commit per activity.
+- **An annotated restore tag on `main` before starting a part**, named for
+  what comes next (`pre-cdn-resilience`), so the state the work began from
+  can be named without counting merge commits backwards. Push it with the
+  branch it belongs to.
 - **No merge to main without explicit confirmation.** Same for pushing.
 - Commit messages explain the non-obvious *why*, not the diff.
 - Visual verification with Playwright at **desktop 1280×900** and **mobile
