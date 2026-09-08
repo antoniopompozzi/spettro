@@ -256,6 +256,26 @@ turquoise 185°, cyan 195°, sky 226°, blue 264°, indigo 302°, purple 328°,
 pink 352°. Indigo and blue-violet land within a degree of each other and part on
 lightness, which is why that band border is a convention.
 
+**Two band borders are conventions now, and for the same reason.** The
+yellow/green split moved from 125° to 120° because a dark olive at 121° stayed
+in yellow, where — being far darker than every other yellow — the sort inside
+the band put it first, and it read on screen as a patch of green between two
+runs of gold. The measurement that settled it: in one playlist the family
+around that cover spanned 72° to 129°, so it was never one hue family cut in
+half; the odd one out was dark, not differently coloured. `#576337` measures
+121.4° at lightness 0.478 while `#EDE1AD`, three positions later, measures
+96.6° at 0.907.
+
+**The known limit, unfixed on purpose.** At one hue a light colour reads cream
+and a dark one reads olive, and they belong to different families to the eye
+while a boundary drawn on hue alone cannot tell them apart — exactly the
+indigo/violet problem in another part of the wheel. Moving the border fixed
+the case that turned up and does not fix the class: the next olive at 123°, or
+a very dark yellow at 100°, will land the same way. A band border that reads
+lightness as well as hue is the shape of a real fix and is deliberately not
+built, because these ranges are tuned by eye and a rule fitted to one playlist
+is how the neutral gate went wrong.
+
 ---
 
 ## What is left
