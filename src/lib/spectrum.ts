@@ -43,12 +43,21 @@ export const HUE_CUT = 13;
  * puts indigo and blue-violet within a degree of each other — they part on
  * lightness, not hue — so the split between indigo and violet is a convention,
  * placed to keep classic indigo out of the violet band.
+ *
+ * Yellow ends at 120 rather than the midpoint between its anchor and green's.
+ * A dark olive sits around 121, and at 125 it stayed in yellow — where, being
+ * far darker than everything else there, the sort inside the band put it first
+ * and it read as a patch of green between two runs of gold. This is the same
+ * kind of limit as the indigo split above: at one hue a light colour reads
+ * cream and a dark one reads olive, and a boundary drawn on hue alone cannot
+ * tell them apart. Moving it is a convention that fixes the case that turned
+ * up, not the class of case.
  */
 export const HUE_RANGES: Readonly<Record<Exclude<Band, 'black' | 'grey' | 'white'>, readonly [number, number]>> = {
   red: [13, 42],
   orange: [42, 90],
-  yellow: [90, 125],
-  green: [125, 205],
+  yellow: [90, 120],
+  green: [120, 205],
   blue: [205, 282],
   indigo: [282, 305],
   violet: [305, 330],
