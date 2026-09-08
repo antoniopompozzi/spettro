@@ -36,7 +36,7 @@ export function SeedSlots({ seeds, onType, onClear }: SeedSlotsProps) {
                 id={fieldId}
                 className={styles.input}
                 value={seed?.title ?? ''}
-                placeholder={index === 0 ? 'Type a song title' : 'Optional'}
+                placeholder={index === 0 ? 'Type a song title…' : 'Optional…'}
                 autoComplete="off"
                 onChange={(event) => onType(index, event.target.value)}
               />

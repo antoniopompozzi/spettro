@@ -99,8 +99,33 @@ button {
   color: inherit;
 }
 
+/*
+ * Placeholders are text, and WCAG counts them as such: `--text-placeholder`
+ * measures 3.17 against the field's own `--surface`, short of the 4.5 AA asks
+ * for. `--text-dim` makes 4.65 on the same ground and is already the colour of
+ * every other secondary line here, so this costs the palette nothing.
+ *
+ * `--text-placeholder` keeps its other two uses — the disconnected status dot
+ * and the separator between the legal links — because both are decorative and
+ * hidden from assistive tech, and neither is text.
+ */
 input::placeholder {
-  color: var(--text-placeholder);
+  color: var(--text-dim);
+}
+
+/*
+ * Touch targets. `manipulation` drops the wait for a possible double-tap,
+ * which is the delay that makes a tap feel like it was missed and gets tapped
+ * again. The highlight is set rather than removed: the default blue box is
+ * wrong against this palette, but taking it away with `transparent` would
+ * leave a touch with no acknowledgement at all.
+ */
+a,
+button,
+input,
+[role="tab"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgb(67 236 68 / 0.24);
 }
 
 :focus-visible {
@@ -123,6 +148,29 @@ input::placeholder {
 .mono {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Off-screen until it takes focus, then a real target at the top-left. It is
+ * the first thing Tab reaches on every page, so it cannot stay one pixel
+ * tall at the moment somebody is actually using it.
+ */
+.skipLink {
+  position: absolute;
+  left: 8px;
+  top: -100%;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skipLink:focus-visible {
+  top: 8px;
 }
 
 .srOnly {

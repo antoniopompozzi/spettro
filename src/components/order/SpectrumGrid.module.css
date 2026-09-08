@@ -10,6 +10,24 @@
 }
 
 /*
+ * The snake's return leg. Flipping the grid's inline axis puts the row's first
+ * cover on the right, so it reads on from where the row above ended — while
+ * the DOM keeps the sequence in order, which is what Tab and a screen reader
+ * follow. Doing this by reversing the array instead sent the keyboard to the
+ * far side of the row and back, against the arrow drawn beside it.
+ *
+ * The children are set back to `ltr`, or every caption inside them would
+ * inherit the flip and hang its punctuation on the wrong side.
+ */
+.reversed {
+  direction: rtl;
+}
+
+.reversed > * {
+  direction: ltr;
+}
+
+/*
  * The serpentine turn. The band is the whole space between two rows and the
  * glyph is centred inside it, so the arrow never reaches the covers above or
  * below. The span must be a block: an inline box is sized from font metrics

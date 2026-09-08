@@ -60,7 +60,18 @@
   background: transparent;
   color: var(--text);
   font-size: 15px;
+  /*
+   * The input sits borderless inside `.field`, which draws the frame and
+   * brightens it on `:focus-within`. That is a change of green on green, so
+   * the ring stays: it is the only mark that says which of the three seed
+   * slots the keyboard is actually in.
+   */
   outline: none;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--green-2);
+  outline-offset: 2px;
 }
 
 .input:read-only {

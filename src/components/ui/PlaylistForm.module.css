@@ -20,13 +20,23 @@
   background: var(--surface);
   color: var(--text);
   font-size: 15px;
-  outline: none;
   transition: border-color 160ms ease;
 }
 
 .input:hover,
 .input:focus {
   border-color: var(--green-1);
+}
+
+/*
+ * The border already brightens on focus, but one green shifting to another
+ * green is not a focus state anybody can find — least of all beside a second
+ * field that looks the same. The ring from `globals.css` is kept, restated
+ * here so a later edit to this file cannot quietly drop it.
+ */
+.input:focus-visible {
+  outline: 2px solid var(--green-2);
+  outline-offset: 2px;
 }
 
 .invalid {

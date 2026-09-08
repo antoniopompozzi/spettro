@@ -19,3 +19,23 @@
 .active .beam {
   animation: spettro-scan 1.15s linear infinite;
 }
+
+/*
+ * The blanket rule in `globals.css` runs every animation to its end instantly,
+ * and this one ends at `translateX(320%)` — off the right edge. Left alone,
+ * reduced motion would not calm the scan bar, it would delete it, and the one
+ * thing on screen saying the run is still going would be gone.
+ *
+ * So the beam stops sweeping and fills the track instead: still visible, still
+ * the colour of a run in progress. What it cannot show is how far along the
+ * run is, and it never could — it is indeterminate either way. The covers
+ * appearing one by one underneath carry that, and they are content rather than
+ * motion, so reduced motion does not take them away.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .active .beam {
+    animation: none;
+    width: 100%;
+    opacity: 0.55;
+  }
+}

@@ -93,6 +93,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${archivo.variable} ${zenDots.variable} ${plexMono.variable}`}>
       <body>
+        {/*
+          * First thing in the tab order on every page. Both layouts put their
+          * content in a `<main id="main">`, so one link serves the app and the
+          * two legal pages. It is off-screen until focused, which is the only
+          * time it is any use.
+          */}
+        <a className="skipLink" href="#main">
+          Skip to main content
+        </a>
         <FilmGrain />
         {children}
       </body>
