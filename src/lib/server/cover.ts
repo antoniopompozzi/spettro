@@ -3,6 +3,7 @@ import 'server-only';
 import { NodeImage } from '@vibrant/image-node';
 
 import { linearToHex, linearToOklab, oklabToLinear, oklchHue, toLinear } from '@/lib/color';
+import { isSpotifyImageUrl } from '@/lib/spotify-cdn';
 
 const TIMEOUT_MS = 8000;
 /** Guards against a mislabelled URL pulling something huge into memory. */
@@ -115,6 +116,12 @@ function dominantCluster(pixels: Pixel[]): Pixel {
  * image mean would put covers in an order its own colour chips contradict.
  */
 export async function coverColour(url: string): Promise<CoverColour | null> {
+  // The image decoder underneath is a large third-party parser reached by a
+  // URL out of a JSON body. Refusing anything but Spotify's CDN keeps the only
+  // bytes it ever sees to the ones Spotify served, and stops this from
+  // doubling as a fetcher for arbitrary hosts.
+  if (!isSpotifyImageUrl(url)) return null;
+
   let buffer: Buffer;
   try {
     const response = await fetch(url, {

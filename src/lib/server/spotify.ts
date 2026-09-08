@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { isSpotifyImageUrl } from '@/lib/spotify-cdn';
+
 import { OrderError } from './errors';
 import { userAccessToken } from './spotify-auth';
 
@@ -41,13 +43,16 @@ function pickCover(
   images: Array<{ url: string; width: number | null }> = [],
   want: number,
 ): string | null {
-  const sized = images
+  // Anything not served by Spotify's CDN is dropped here, before it can reach
+  // the decoder on the server or an `src` in the browser.
+  const usable = images.filter((image) => isSpotifyImageUrl(image?.url));
+  const sized = usable
     .filter((image): image is { url: string; width: number } => typeof image.width === 'number')
     .sort((a, b) => a.width - b.width);
   return (
     sized.find((image) => image.width >= want)?.url ??
     sized[sized.length - 1]?.url ??
-    images[0]?.url ??
+    usable[0]?.url ??
     null
   );
 }

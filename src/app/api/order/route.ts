@@ -1,6 +1,12 @@
 import { spotifyPlaylistId } from '@/lib/playlist';
 import { OrderError } from '@/lib/server/errors';
 import { debug, failureDetail } from '@/lib/server/log';
+import {
+  ORDER_LIMIT,
+  RateLimited,
+  enforceRateLimit,
+  rateLimitedResponse,
+} from '@/lib/server/rate-limit';
 import { sequenceTracks } from '@/lib/server/sequence';
 import { fetchPlaylistTracks } from '@/lib/server/spotify';
 
@@ -11,6 +17,10 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    // One call here is dozens to Spotify and ReccoBeats, so the ceiling guards
+    // their quotas rather than this server's.
+    enforceRateLimit(request, 'order', ORDER_LIMIT);
+
     const body = (await request.json().catch(() => null)) as { url?: unknown } | null;
     const url = typeof body?.url === 'string' ? body.url : '';
     const playlistId = spotifyPlaylistId(url);
@@ -39,6 +49,7 @@ export async function POST(request: Request) {
     debug(`[order] playlist ${playlistId}`);
     return Response.json(payload);
   } catch (error) {
+    if (error instanceof RateLimited) return rateLimitedResponse(error);
     if (error instanceof OrderError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
