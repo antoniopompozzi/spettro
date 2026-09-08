@@ -234,12 +234,72 @@ lightness, which is why that band border is a convention.
   `NODE_ENV`.
 - **Sitemap and metadata.**
 
-Open question left from Part A: the neutral threshold in
-`src/lib/server/cover.ts` (`NEUTRAL_CHROMA` 0.045, `NEUTRAL_SHARE` 0.12) puts 18
-of 44 covers of the test playlist in the achromatic bands. Half of those really
-are black-and-white photographs; the other half have real but muted colour that
-the threshold discards. Measured alternatives: chroma 0.03 → 14 neutral, chroma
-0.02 → 8. Not changed, because the value was chosen deliberately.
+## The neutral gate, and five things that do not fix it
+
+Open question left from Part A, now measured against a full eye-judged ground
+truth. **Do not re-run these experiments; they are all negative results.**
+
+**What the gate actually is.** `NEUTRAL_CHROMA` 0.045 marks a pixel as carrying
+hue; `NEUTRAL_SHARE` 0.12 is a **quota over the whole image** — the share of
+such pixels decides neutral against chromatic (`src/lib/server/cover.ts`). The
+dominant cluster runs only *after* that gate and only picks the hue. Note also
+that the clustering input is pre-filtered at `NEUTRAL_CHROMA`, so a cover whose
+colour is real but sits entirely below 0.045 is invisible to the cluster no
+matter what the gate does.
+
+**Ground truth.** All 37 distinct covers of `6pE9NUVvRWxg427FpVMSow` judged by
+eye: 16 must be neutral, 14 must be chromatic, 7 accept either. Cover numbers
+below are positions in the distinct-cover list, in the order the ordered API
+response returns them (so the neutral bands come first, covers 1-15).
+
+**Current behaviour: gate 32/37, exact band 29/37. It errs in both directions.**
+Covers 2 (dark brown) and 10 (azure) are called neutral and are not; covers 22,
+24 and 29 are called orange, orange and blue and are really grey, white and
+black. The earlier note that half of the neutral covers really are
+monochrome photographs was right about the count and wrong about the direction
+of the remaining error.
+
+**Why no summary statistic fixes it.** Covers 6 and 7 read as grey to the eye
+but measure *more* coloured than cover 2, which reads as brown: mean OKLab
+chroma 0.0196 and 0.0213 against 0.0187. Every threshold on a whole-image
+statistic therefore has to put 2 above 6 and 7, and none does. Measured and
+rejected:
+
+- **Dominant-cluster gate** (the obvious fix): best 14/15 on the neutral set,
+  but the separating threshold sits in a band 0.0004 wide holding covers 2, 7, 6
+  and 13, which the eye splits. That is fitting noise, and it also flips 4 of
+  the 22 chromatic covers, two of them at cluster chroma 0.08-0.09.
+- **Hue coherence** (|mean of a,b| over mean of |a,b|): 24/37. Cover 2 is indeed
+  coherent at 0.961, but cover 10 is 0.375 — as low as covers the eye calls grey
+  — while near-grey covers 1, 3, 13, 14 sit at 0.95-0.99 on a trace of tint.
+- **Hue concentration** (largest share within a 45° sector): 15/15 on the
+  neutral set, the only measure that gets them all, but it moves 14 of the 22
+  chromatic covers into the neutral bands, one of them at mean chroma 0.0901.
+  Overfitted to two positive examples.
+- **Edge and corner sampling**, on the theory that the background carries the
+  read: nine variants — border frames of 8, 12 and 16px, corner blocks of 12, 16
+  and 20px, and three centre-weighted gradients — each swept over both
+  thresholds. Best gate 35/37, best exact band 33/37, against 35/37 and 32/37
+  for the whole image. No region beats sampling everything, so the failing
+  covers are not a matter of where the pixels are read.
+- **Chroma percentiles, chroma relative to lightness, mid-lightness-only chroma,
+  clustering restricted to the a,b plane**: all 33-35/37, all failing on 6 and
+  7.
+
+**Thresholds left as they are, and the retune is dead.** The same quota rule at
+`NEUTRAL_CHROMA` 0.0375 and `NEUTRAL_SHARE` 0.31 measures better on this
+playlist — gate 35/37, exact band 32/37, fixing 22, 24 and 29 and still missing
+2 and 10 — so it was validated against `3bfHFW9vZBk9hvxqnzVJsz`, which has no
+achromatic covers at all. It invents four: 4 of that playlist's 14 distinct
+covers cross into black, grey and white, on chromatic-pixel quotas of 22-29%
+sitting just under the 31% bar. Raising the quota is fitted to the monochrome
+artwork of the rap playlist and does not survive contact with a colourful one.
+Keep 0.045 and 0.12.
+
+The useful shape of the problem, for whoever picks this up: the gate needs a
+measure of whether a cover has *a colour*, and every candidate here is a measure
+of *how much chroma* it contains. Those come apart on exactly the covers that
+fail. A different kind of evidence would be needed — not another threshold.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
