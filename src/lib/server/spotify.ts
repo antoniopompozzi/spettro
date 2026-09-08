@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { isSpotifyImageUrl } from '@/lib/spotify-cdn';
+
 import { OrderError } from './errors';
 import { userAccessToken } from './spotify-auth';
 
@@ -41,13 +43,16 @@ function pickCover(
   images: Array<{ url: string; width: number | null }> = [],
   want: number,
 ): string | null {
-  const sized = images
+  // Anything not served by Spotify's CDN is dropped here, before it can reach
+  // the decoder on the server or an `src` in the browser.
+  const usable = images.filter((image) => isSpotifyImageUrl(image?.url));
+  const sized = usable
     .filter((image): image is { url: string; width: number } => typeof image.width === 'number')
     .sort((a, b) => a.width - b.width);
   return (
     sized.find((image) => image.width >= want)?.url ??
     sized[sized.length - 1]?.url ??
-    images[0]?.url ??
+    usable[0]?.url ??
     null
   );
 }
@@ -73,7 +78,26 @@ interface ItemPage {
   items: PlaylistItem[];
 }
 
+/**
+ * Every page after the first is fetched from a URL that arrived inside the
+ * previous page's JSON — and it is fetched carrying the listener's access
+ * token. A `next` pointing anywhere else would hand that token to whoever it
+ * pointed at, so the host is checked rather than trusted.
+ */
+function isSpotifyApiUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname === 'api.spotify.com';
+  } catch {
+    return false;
+  }
+}
+
 async function readPage(url: string): Promise<ItemPage> {
+  if (!isSpotifyApiUrl(url)) {
+    throw new OrderError(502, 'Spotify answered with something Spettro could not follow.');
+  }
+
   const response = await fetch(url, {
     headers: { authorization: `Bearer ${await userAccessToken()}` },
     cache: 'no-store',

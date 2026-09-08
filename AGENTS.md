@@ -181,6 +181,44 @@ change one and the other must follow.
 
 ---
 
+## `npm audit` on the image decoder: do not "fix" it
+
+`npm audit` reports four moderate vulnerabilities. **They are one advisory**,
+[GHSA-5v7r-6r5c-r473](https://github.com/advisories/GHSA-5v7r-6r5c-r473),
+CVSS 5.3, counted once for `file-type` — where it actually lives — and three
+more times for the packages that merely depend on it: `@jimp/core`,
+`@jimp/custom` and `@vibrant/image-node`, which decodes the covers.
+
+The bug is an infinite loop in the **ASF** parser on malformed input with a
+zero-size sub-header. It is not reachable here. That branch is entered only
+when the bytes open with the ASF GUID `30 26 B2 75 8E 66 CF 11 A6 D9`, and the
+only bytes this app decodes are album artwork fetched from Spotify's CDN —
+host-checked before the request and again on the URL the response came back
+from (`src/lib/spotify-cdn.ts`). Reaching it would require Spotify to serve a
+malformed ASF file where a cover should be.
+
+**`npm audit fix` does not resolve it, and `--force` makes it much worse.**
+The fix in `file-type` landed in 21.3.1, which is ESM-only, while
+`@jimp/core@0.22.12` declares `^16.5.4` and loads it with `require()` — so
+pinning it through `overrides` breaks jimp instead. What `--force` actually
+does is *downgrade* `@vibrant/image-node` from 4.0.4 to 3.0.0, which pulls in
+`jimp@0.2.28` from 2017 along with `request` and `form-data`. Measured, in an
+isolated install: **4 moderate become 11 vulnerabilities, 5 of them critical**
+and 2 high — SSRF in `request`, CRLF injection and an unsafe boundary in
+`form-data`, prototype pollution in `minimist` and `tough-cookie`, and an
+infinite loop in `jpeg-js`, which is the same class of bug in the decoder for
+the format the covers actually are. From there `npm audit` recommends
+reinstalling 4.0.4: the advice is circular.
+
+The downgrade would not change the output — 3.0.0 returns byte-identical
+pixel data on six covers, so the colours and the sequence would survive it.
+That is not the reason to refuse it; the eleven vulnerabilities are.
+
+**The real way out is `@jimp` updating `file-type`, not anything done here.**
+Until that lands, staying on `@vibrant/image-node@4.0.4` and leaving the audit
+reporting four moderates is the correct position, not an oversight.
+---
+
 ## Working conventions
 
 - A dedicated branch per part; one commit per activity.

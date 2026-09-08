@@ -4,6 +4,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
 
 import { OrderError } from './errors';
+import { debug } from './log';
 
 const AUTHORIZE_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -51,9 +52,24 @@ function clientId(): string {
 /** Cookies are host-only and http-only: nothing here is readable from the page. */
 const baseCookie = {
   httpOnly: true,
+  // `lax` and not `strict`: the return from Spotify is a cross-site navigation,
+  // and a strict cookie would not be sent with it, so the callback would find
+  // neither the state nonce nor the verifier and every sign-in would fail.
   sameSite: 'lax',
   path: '/',
   secure: process.env.NODE_ENV === 'production',
+} as const;
+
+/**
+ * The two flow cookies are scoped to the one route that reads them and live
+ * five minutes, which is longer than a consent screen takes and shorter than a
+ * walk away from the desk. They are deleted on the way out of the callback
+ * whatever happened there.
+ */
+const oauthCookie = {
+  ...baseCookie,
+  path: '/api/spotify/callback',
+  maxAge: 300,
 } as const;
 
 /**
@@ -66,8 +82,8 @@ export async function authorizeUrl(): Promise<string> {
   const challenge = base64url(createHash('sha256').update(verifier).digest());
 
   const jar = await cookies();
-  jar.set(VERIFIER, verifier, { ...baseCookie, maxAge: 600 });
-  jar.set(STATE, state, { ...baseCookie, maxAge: 600 });
+  jar.set(VERIFIER, verifier, oauthCookie);
+  jar.set(STATE, state, oauthCookie);
 
   const params = new URLSearchParams({
     client_id: clientId(),
@@ -99,10 +115,11 @@ async function exchange(body: URLSearchParams): Promise<TokenResponse> {
     const detail = (await response.json().catch(() => null)) as
       | { error_description?: string; error?: string }
       | null;
-    throw new OrderError(
-      502,
-      `Spotify refused the sign-in: ${detail?.error_description ?? detail?.error ?? response.status}`,
-    );
+    // Spotify's own wording goes to the developer, never to the listener: it
+    // names grant types and parameters, and quoting an upstream error back into
+    // the page is how internals end up on screen.
+    debug('[spotify-auth] token endpoint refused', response.status, detail);
+    throw new OrderError(502, 'Spotify refused the sign-in. Try connecting again.');
   }
   return (await response.json()) as TokenResponse;
 }
@@ -119,13 +136,26 @@ async function store(tokens: TokenResponse): Promise<void> {
   }
 }
 
+/**
+ * Drops the two flow cookies. The callback calls this on every path out of
+ * itself — consent refused, parameters missing, exchange failed, or success —
+ * so a verifier never outlives the one attempt it was minted for.
+ *
+ * Deleting needs the same path the cookie was written with, or the browser
+ * keeps the original.
+ */
+export async function clearOAuthCookies(): Promise<void> {
+  const jar = await cookies();
+  jar.delete({ name: STATE, path: oauthCookie.path });
+  jar.delete({ name: VERIFIER, path: oauthCookie.path });
+}
+
 /** Finishes the flow: checks the state nonce, trades the code for tokens. */
 export async function completeSignIn(code: string, state: string): Promise<void> {
   const jar = await cookies();
   const expected = jar.get(STATE)?.value;
   const verifier = jar.get(VERIFIER)?.value;
-  jar.delete(STATE);
-  jar.delete(VERIFIER);
+  await clearOAuthCookies();
 
   if (!expected || !verifier || state !== expected) {
     throw new OrderError(400, 'That sign-in did not come from Spettro. Try connecting again.');

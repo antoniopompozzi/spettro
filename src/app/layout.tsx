@@ -5,6 +5,15 @@ import { FilmGrain } from '@/components/FilmGrain';
 
 import './globals.css';
 
+/**
+ * Every page renders per request, because the CSP in `proxy.ts` carries a
+ * nonce and Next can only stamp one onto scripts it emits while answering a
+ * real request. A prerendered page would ship script tags with no nonce, and
+ * `strict-dynamic` would then block them: the build would look clean and the
+ * production site would load nothing. Nothing here is cached anyway.
+ */
+export const dynamic = 'force-dynamic';
+
 const archivo = Archivo({
   subsets: ['latin'],
   axes: ['wdth'],
