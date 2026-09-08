@@ -99,8 +99,18 @@ button {
   color: inherit;
 }
 
+/*
+ * Placeholders are text, and WCAG counts them as such: `--text-placeholder`
+ * measures 3.17 against the field's own `--surface`, short of the 4.5 AA asks
+ * for. `--text-dim` makes 4.65 on the same ground and is already the colour of
+ * every other secondary line here, so this costs the palette nothing.
+ *
+ * `--text-placeholder` keeps its other two uses — the disconnected status dot
+ * and the separator between the legal links — because both are decorative and
+ * hidden from assistive tech, and neither is text.
+ */
 input::placeholder {
-  color: var(--text-placeholder);
+  color: var(--text-dim);
 }
 
 /*
