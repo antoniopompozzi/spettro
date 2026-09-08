@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Archivo, IBM_Plex_Mono, Zen_Dots } from 'next/font/google';
 
 import { FilmGrain } from '@/components/FilmGrain';
+import { baseUrl } from '@/lib/server/base-url';
 
 import './globals.css';
 
@@ -35,12 +36,35 @@ const plexMono = IBM_Plex_Mono({
   display: 'swap',
 });
 
+const DESCRIPTION =
+  'Reorder one of your Spotify playlists so its album covers run through the colour spectrum. Spettro reads the artwork, never changes your playlist.';
+
 export const metadata: Metadata = {
+  // Every relative URL below — and the generated preview card — is resolved
+  // against this, so it has to be the origin the app is actually served from
+  // rather than a domain written down once and forgotten.
+  metadataBase: baseUrl(),
   title: 'Spettro',
-  description:
-    'Reorder one of your playlists so its covers move through the colour spectrum, and find new tracks from up to three seeds.',
+  description: DESCRIPTION,
   applicationName: 'Spettro',
   manifest: '/manifest.webmanifest',
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: 'Spettro',
+    title: 'Spettro',
+    // WhatsApp and the like show this under the image, so it says what the app
+    // does and what it does not do — the read-only part is the reassurance
+    // somebody wants before connecting an account.
+    description: DESCRIPTION,
+    url: '/',
+    locale: 'en',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Spettro',
+    description: DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
     title: 'Spettro',

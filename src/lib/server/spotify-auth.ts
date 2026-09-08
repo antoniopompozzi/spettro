@@ -3,6 +3,7 @@ import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
 
+import { absoluteUrl } from './base-url';
 import { OrderError } from './errors';
 import { debug } from './log';
 
@@ -21,11 +22,8 @@ const EXPIRY_MARGIN_S = 60;
  */
 const SCOPES = 'playlist-read-private playlist-read-collaborative';
 
-/**
- * Spotify only accepts HTTPS or the numeric loopback address, so the default is
- * `127.0.0.1` rather than `localhost` — and the app has to be opened there too.
- */
-const DEFAULT_REDIRECT_URI = 'http://127.0.0.1:3000/api/spotify/callback';
+/** The path Spotify sends the listener back to; the host comes from the environment. */
+const CALLBACK_PATH = '/api/spotify/callback';
 
 const VERIFIER = 'spettro_pkce_verifier';
 const STATE = 'spettro_oauth_state';
@@ -34,8 +32,13 @@ const ACCESS = 'spettro_access_token';
 
 const base64url = (input: Buffer) => input.toString('base64url');
 
+/**
+ * Spotify checks this against the URIs registered on the app, and checks it
+ * twice: once when the flow starts and once when the code is exchanged. Both
+ * calls read it from here, so the two can never disagree.
+ */
 export function redirectUri(): string {
-  return process.env.SPOTIFY_REDIRECT_URI ?? DEFAULT_REDIRECT_URI;
+  return absoluteUrl(CALLBACK_PATH);
 }
 
 function clientId(): string {

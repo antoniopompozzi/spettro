@@ -260,17 +260,27 @@ lightness, which is why that band border is a convention.
 
 ## What is left
 
-- **Part C — technical security.**
 - **Part D — accessibility.**
 - **DISCOVER**, including instant-suggestion search for the seeds. ReccoBeats
   also offers seed-based recommendations; whether it replaces or joins Last.fm
   is undecided.
-- **Deploy to Vercel**: update the Redirect URI on the Spotify app to the
-  production URL, move `SPOTIFY_CLIENT_ID` into the project's environment
-  variables, and drop `allowedDevOrigins` from the equation (it is dev-only).
-  Cookies become `Secure` automatically because `baseCookie` keys off
-  `NODE_ENV`.
-- **Sitemap and metadata.**
+- **The first Vercel deploy.** The code no longer assumes a host: the origin
+  comes from `src/lib/server/base-url.ts`, which prefers `SPETTRO_BASE_URL`,
+  falls back to `VERCEL_PROJECT_PRODUCTION_URL`, and otherwise uses
+  `http://127.0.0.1:3000`. What is still manual: set `SPOTIFY_CLIENT_ID` in the
+  project's environment variables, tick **Enable access to System Environment
+  Variables** in the project settings (Vercel does not expose
+  `VERCEL_PROJECT_PRODUCTION_URL` without it), and register the production
+  callback on the Spotify app. Cookies become `Secure` on their own because
+  `baseCookie` keys off `NODE_ENV`, and `allowedDevOrigins` is dev-only.
+
+  **`VERCEL_URL` is the wrong variable and must not be used here.** It is
+  unique to each deployment, and Spotify refuses any `redirect_uri` that is
+  not registered on the app beforehand, so sign-in would break on every
+  deploy. The consequence of using the production URL instead: a sign-in
+  begun on a preview deployment comes back to production. Registering every
+  preview URL by hand is the only alternative, and it is not possible in
+  advance.
 
 ## The neutral gate, and five things that do not fix it
 
