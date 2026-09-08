@@ -26,10 +26,14 @@ export function SpectrumGrid({ tracks, revealed }: SpectrumGridProps) {
       ...track,
       position,
     }));
+    // Every row keeps the sequence's own order. The turn is drawn by CSS on
+    // the odd rows, so the DOM stays the order the sequence is meant to be
+    // read in — which is the order Tab walks and a screen reader announces.
+    // Reversing the array instead made the keyboard jump from the end of one
+    // row to the far side of the next and walk back, against the arrow.
     const chunks: SequencedTrack[][] = [];
     for (let i = 0; i < sequenced.length; i += columns) {
-      const chunk = sequenced.slice(i, i + columns);
-      chunks.push(chunks.length % 2 === 1 ? chunk.reverse() : chunk);
+      chunks.push(sequenced.slice(i, i + columns));
     }
     return chunks;
   }, [columns, tracks]);
@@ -43,7 +47,7 @@ export function SpectrumGrid({ tracks, revealed }: SpectrumGridProps) {
         const turnAtRight = index % 2 === 0;
         return (
           <div key={row[0]?.id ?? index}>
-            <div className={styles.row}>
+            <div className={`${styles.row} ${turnAtRight ? '' : styles.reversed}`}>
               {row.map((track) => (
                 <CoverTile
                   key={track.id}

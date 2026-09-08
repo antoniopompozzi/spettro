@@ -37,7 +37,20 @@ export function CoverTile({ track, loaded }: CoverTileProps) {
           aria-hidden="true"
         />
         {loaded && track.coverUrl ? (
-          <img className={styles.art} src={track.coverUrl} alt="" loading="lazy" decoding="async" />
+          // The cover is the content here, not decoration: it is the thing the
+          // whole sequence is built from, so it is named by the release it
+          // belongs to rather than announced as "image". Width and height are
+          // the artwork's own square, which reserves the space before it
+          // decodes; CSS still sizes it to the column.
+          <img
+            className={styles.art}
+            src={track.coverUrl}
+            alt={`Album art for ${track.title} by ${track.artist}`}
+            width={300}
+            height={300}
+            loading="lazy"
+            decoding="async"
+          />
         ) : null}
       </span>
 
@@ -78,8 +91,12 @@ export function CoverTile({ track, loaded }: CoverTileProps) {
       <span className={`${styles.meta} mono`}>
         <span>{loaded ? tempo : ''}</span>
         {loaded && track.explicit ? (
-          <span className={styles.explicit} title="Explicit">
-            E<span className="srOnly"> — explicit</span>
+          // A lone "E" is a convention the eye knows and a screen reader does
+          // not: read out, it is the letter and nothing else. The letter is
+          // hidden from assistive tech and the words are given instead.
+          <span className={styles.explicit}>
+            <span aria-hidden="true">E</span>
+            <span className="srOnly">Explicit content</span>
           </span>
         ) : null}
       </span>

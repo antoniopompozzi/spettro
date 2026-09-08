@@ -20,7 +20,7 @@ export default function Home() {
         <ModeToggle mode={mode} onChange={setMode} />
       </header>
 
-      <main className={styles.main}>
+      <main id="main" className={styles.main}>
         <div id="panel-order" role="tabpanel" aria-labelledby="tab-order" hidden={mode !== 'order'}>
           <OrderMode />
         </div>

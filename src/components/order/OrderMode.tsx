@@ -81,7 +81,7 @@ export function OrderMode() {
         }}
         onSubmit={handleSubmit}
         label="Spotify playlist link"
-        placeholder="Paste a Spotify playlist link"
+        placeholder="Paste a Spotify playlist link…"
         submitLabel="Sequence"
         error={error}
       />

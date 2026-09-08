@@ -11,7 +11,7 @@ interface LegalPageProps {
 /** Shared frame for the privacy policy and the end user agreement. */
 export function LegalPage({ title, updated, children }: LegalPageProps) {
   return (
-    <main className={styles.page}>
+    <main id="main" className={styles.page}>
       <Link className={`${styles.back} microLabel`} href="/">
         ← Back to Spettro
       </Link>
