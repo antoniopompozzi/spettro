@@ -256,3 +256,58 @@ export async function searchTrack(title: string, artist?: string): Promise<Spoti
   }
   return null;
 }
+
+/** Spotify's base-62 ids are 22 characters. Checked before it reaches a URL path. */
+const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
+export const isSpotifyTrackId = (value: string): boolean => SPOTIFY_ID.test(value);
+
+/**
+ * One track by its id, for a seed that arrives already picked.
+ *
+ * Searching again for a seed whose id is known would be worse than wasteful:
+ * search answers by popularity, so it could hand back a different record from
+ * the one the listener chose — a remaster, a compilation issue, a live take —
+ * with different artwork and therefore a different colour to compare against.
+ */
+export async function fetchTrack(spotifyId: string): Promise<SpotifyTrack | null> {
+  if (!isSpotifyTrackId(spotifyId)) return null;
+
+  let found: SpotifyObject;
+  try {
+    const response = await fetch(`${API_BASE}/tracks/${spotifyId}`, {
+      headers: { authorization: `Bearer ${await userAccessToken()}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (response.status === 401) {
+      throw new OrderError(401, 'That Spotify connection has expired. Connect your account again.');
+    }
+    if (response.status === 429) {
+      throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
+    }
+    if (!response.ok) {
+      console.warn(`[spotify] track lookup answered ${response.status}`);
+      return null;
+    }
+    found = (await response.json()) as SpotifyObject;
+  } catch (cause) {
+    if (cause instanceof OrderError) throw cause;
+    console.warn('[spotify] track lookup failed to reach the API');
+    return null;
+  }
+
+  const credited = found?.artists?.[0]?.name;
+  if (!found?.id || !found.name || !credited) return null;
+
+  const images = found.album?.images;
+  return {
+    id: found.id,
+    spotifyId: found.id,
+    title: found.name,
+    artist: credited,
+    cover: pickCover(images, DISPLAY_COVER_WIDTH),
+    swatch: pickCover(images, SWATCH_COVER_WIDTH),
+    spotifyUrl: found.external_urls?.spotify ?? null,
+    explicit: found.explicit === true,
+  };
+}

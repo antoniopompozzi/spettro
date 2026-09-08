@@ -106,3 +106,43 @@ export function meanHue(degrees: readonly number[]): number | null {
   if (x === 0 && y === 0) return null;
   return Math.round(((Math.atan2(y, x) * 180) / Math.PI + 360) % 360);
 }
+
+/** A colour as Discover compares them: the three continuous values, not a band. */
+export interface Oklch {
+  lightness: number;
+  chroma: number;
+  /** `null` for a cover with no hue of its own — it sits on the grey axis. */
+  hue: number | null;
+}
+
+/**
+ * How far apart two cover colours are, as plain Euclidean distance in OKLab.
+ *
+ * Discover compares colours on the continuous values and never on the eleven
+ * named bands, which measure something else. A band is a reading order: it
+ * answers "where on one line does this cover go", and to do that it throws away
+ * chroma entirely and reduces hue to which of eleven buckets it fell in. Two
+ * covers a degree apart across a border land in different bands, and a pale
+ * cream and a dark olive land in the same one — the border cases AGENTS.md
+ * records are exactly the covers a distance must not be wrong about.
+ *
+ * OKLab is what makes the distance plain. It was fitted so that equal steps
+ * look like equal steps, so lightness, chroma and hue need no weights invented
+ * to balance them against each other — the space already carries that, and a
+ * weight chosen here would be one more constant tuned against one playlist.
+ *
+ * A cover with no hue has no angle to place it at, so it sits on the grey axis
+ * at its own lightness. That is the honest reading of `hue: null`: the cover
+ * has no colour to be near, and the distance from it grows with how colourful
+ * the other one is, which is the right answer.
+ */
+export function oklabDistance(a: Oklch, b: Oklch): number {
+  const point = ({ lightness, chroma, hue }: Oklch): [number, number, number] => {
+    if (hue === null) return [lightness, 0, 0];
+    const radians = (hue * Math.PI) / 180;
+    return [lightness, chroma * Math.cos(radians), chroma * Math.sin(radians)];
+  };
+  const [aL, aA, aB] = point(a);
+  const [bL, bA, bB] = point(b);
+  return Math.hypot(aL - bL, aA - bA, aB - bB);
+}

@@ -25,7 +25,7 @@ import type { SpotifyTrack } from './spotify';
  * is deliberately untouched at 8s — that one waits for real numbers from
  * `meta.dropped` in production rather than a guess made here.
  */
-const COVER_CONCURRENCY = 4;
+export const COVER_CONCURRENCY = 4;
 
 /**
  * Reads every cover and lays the tracks out along the spectrum, which is the

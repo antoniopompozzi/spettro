@@ -81,3 +81,70 @@ export interface OrderResponse {
     withoutTempo: number;
   };
 }
+
+/**
+ * One seed as the client sends it. `artist` and `spotifyId` arrive together
+ * from a resolved pick; a seed typed as a bare title has neither, and the
+ * server resolves it against Spotify before anything else can happen — Last.fm
+ * is addressed by artist and title, and a colour needs a record to read.
+ */
+export interface DiscoverSeed {
+  title: string;
+  artist?: string;
+  spotifyId?: string;
+}
+
+/** A seed once Spettro knows which record it is, echoed back for the read-out. */
+export interface ResolvedSeed {
+  title: string;
+  artist: string;
+  spotifyId: string;
+  color: string;
+  bpm: number | null;
+}
+
+/** A suggestion, with the two numbers that decided its rank kept on it. */
+export interface Suggestion extends Track {
+  /** How many of the seeds Last.fm named this track for. The first sort key. */
+  seedMatches: number;
+  /** Mean OKLab distance to the seeds that named it. The second sort key. */
+  colourDistance: number;
+}
+
+/**
+ * What `POST /api/discover` answers with.
+ *
+ * `meta` is the funnel, stage by stage. Almost every stage removes candidates,
+ * and when twenty come back as three the answer is always "at which stage" —
+ * a question that otherwise costs a round of temporary logging to ask.
+ */
+export interface DiscoverResponse {
+  results: Suggestion[];
+  seeds: ResolvedSeed[];
+  meta: {
+    /** Seeds asked for, and how many became a Spotify record. */
+    seedsGiven: number;
+    seedsResolved: number;
+    /** Seeds ReccoBeats had a tempo for — how many the average speaks for. */
+    seedsWithTempo: number;
+    /** Names returned by Last.fm, summed over seeds, before de-duplication. */
+    candidates: number;
+    /** Distinct names left after de-duplication across seeds. */
+    unique: number;
+    /** Of those, how many were looked up — the rest fell outside the ceiling. */
+    considered: number;
+    /** Looked up and confidently matched to a Spotify record. */
+    resolved: number;
+    /** Looked up and dropped: no confident match, or the seed's own record. */
+    unresolved: number;
+    /** Resolved but dropped because their artwork yielded no colour. */
+    withoutColour: number;
+    /** Excluded by the tempo filter. Zero when no seed had a tempo to filter on. */
+    filteredByTempo: number;
+    /** Ranked and returned. */
+    returned: number;
+    /** Of those returned, how many carry a tempo and how many do not. */
+    withTempo: number;
+    withoutTempo: number;
+  };
+}
