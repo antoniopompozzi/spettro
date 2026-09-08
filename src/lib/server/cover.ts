@@ -129,6 +129,10 @@ export async function coverColour(url: string): Promise<CoverColour | null> {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!response.ok) return null;
+    // The check above covers where the request was aimed, not where it landed.
+    // `fetch` follows redirects, so a 302 off the CDN would hand the decoder
+    // bytes from somewhere this never agreed to read.
+    if (!isSpotifyImageUrl(response.url)) return null;
     const bytes = await response.arrayBuffer();
     if (bytes.byteLength === 0 || bytes.byteLength > MAX_BYTES) return null;
     buffer = Buffer.from(bytes);

@@ -23,6 +23,11 @@ export function isSpotifyImageUrl(value: unknown): value is string {
     return false;
   }
   if (url.protocol !== 'https:') return false;
+  // `https://evil.com@i.scdn.co/x` really does address the CDN — the host is
+  // the part after the `@`. It is refused anyway: credentials mean nothing to
+  // an image CDN, and a URL that reads like it points somewhere else is one
+  // the next person has to parse twice to trust once.
+  if (url.username !== '' || url.password !== '') return false;
   // `endsWith` alone would accept `evil-scdn.co`; the dot has to be part of it.
   return url.hostname === 'scdn.co' || url.hostname.endsWith(CDN_SUFFIX);
 }

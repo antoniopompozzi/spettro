@@ -78,7 +78,26 @@ interface ItemPage {
   items: PlaylistItem[];
 }
 
+/**
+ * Every page after the first is fetched from a URL that arrived inside the
+ * previous page's JSON — and it is fetched carrying the listener's access
+ * token. A `next` pointing anywhere else would hand that token to whoever it
+ * pointed at, so the host is checked rather than trusted.
+ */
+function isSpotifyApiUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname === 'api.spotify.com';
+  } catch {
+    return false;
+  }
+}
+
 async function readPage(url: string): Promise<ItemPage> {
+  if (!isSpotifyApiUrl(url)) {
+    throw new OrderError(502, 'Spotify answered with something Spettro could not follow.');
+  }
+
   const response = await fetch(url, {
     headers: { authorization: `Bearer ${await userAccessToken()}` },
     cache: 'no-store',
