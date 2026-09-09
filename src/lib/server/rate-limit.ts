@@ -33,6 +33,16 @@ export const ORDER_LIMIT: Limit = { max: 12, windowMs: 5 * 60_000 };
  * ceiling is lower than Order's despite the window being the same.
  */
 export const DISCOVER_LIMIT: Limit = { max: 8, windowMs: 5 * 60_000 };
+/**
+ * Seed suggestions: one Spotify search each, and typed at rather than clicked.
+ *
+ * Higher than the others because a person filling three slots legitimately
+ * makes a couple of dozen of these in a minute, and lower than it looks because
+ * the client debounces — the ceiling is here to stop a stuck key or a loop from
+ * spending this app's Spotify quota, which a single Discover run has already
+ * been measured exhausting.
+ */
+export const SUGGEST_LIMIT: Limit = { max: 40, windowMs: 60_000 };
 /** Session reads: cheap and polled by the page, so the ceiling is high. */
 export const READ_LIMIT: Limit = { max: 60, windowMs: 60_000 };
 

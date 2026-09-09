@@ -56,8 +56,39 @@ export interface Stat {
   value: string;
 }
 
-/** One of the three Discover seed slots; `null` while empty. */
-export type Seed = { title: string } | null;
+/**
+ * A seed once it has been picked out of Spotify's catalogue.
+ *
+ * All three fields together, and that is the point. A seed used to be a typed
+ * title, which the server then had to guess a record from; picked here it is
+ * already the exact record the listener saw, so the engine can look it up by id
+ * instead of searching a name again and risking a different pressing with
+ * different artwork — and therefore a different colour to rank against.
+ */
+export interface Seed {
+  title: string;
+  artist: string;
+  spotifyId: string;
+}
+
+/** One of the three Discover slots; `null` while nothing has been picked. */
+export type SeedSlot = Seed | null;
+
+/**
+ * One row of the seed picker's suggestions.
+ *
+ * Deliberately smaller than `Track`: this crosses to the browser on every
+ * keystroke that survives the debounce, so it carries what a person needs to
+ * recognise a record and not one field more.
+ */
+export interface SeedSuggestion {
+  spotifyId: string;
+  title: string;
+  artist: string;
+  /** A 64px cover from Spotify's CDN, or `null` for a release with no art. */
+  thumb: string | null;
+  explicit: boolean;
+}
 
 export type OrderPhase = 'empty' | 'processing' | 'result';
 
