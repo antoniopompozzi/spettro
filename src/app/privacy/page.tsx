@@ -12,7 +12,7 @@ const SPOTIFY_APPS = 'https://www.spotify.com/account/apps/';
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy policy" updated="8 September 2026">
+    <LegalPage title="Privacy policy" updated="9 September 2026">
       <div className={styles.lede}>
         <p>
           <strong>The short version.</strong> Spettro has no database. It never reads your
@@ -23,10 +23,13 @@ export default function PrivacyPage() {
       </div>
 
       <p>
-        Spettro reorders one of your Spotify playlists so its cover art moves through the
-        colour spectrum. To do that it has to read the playlist you point it at. This page
-        says exactly what it reads, who else sees it, and how long anything lasts. Collecting
-        and using your information is subject to this policy, and to nothing else.
+        Spettro does two things. <strong>Order</strong> reorders one of your Spotify playlists
+        so its cover art moves through the colour spectrum, which means reading the playlist
+        you point it at. <strong>Discover</strong> takes up to three song titles you type and
+        suggests tracks whose cover art is close to theirs in colour, which means looking those
+        songs up and looking up the tracks it might suggest. This page says exactly what each
+        one reads, who else sees it, and how long anything lasts. Collecting and using your
+        information is subject to this policy, and to nothing else.
       </p>
 
       <h2>What Spettro reads</h2>
@@ -37,7 +40,9 @@ export default function PrivacyPage() {
         does not ask for access to your profile, your email address, your library, your
         followers or what you listen to.
       </p>
-      <p>Then, for each track in the playlist you paste, it reads:</p>
+      <p>
+        In <strong>Order</strong>, for each track in the playlist you paste, it reads:
+      </p>
       <ul>
         <li>the track title and the name of the main artist;</li>
         <li>the Spotify track identifier;</li>
@@ -49,19 +54,29 @@ export default function PrivacyPage() {
         It also reads the playlist identifier out of the link you paste. It does not read the
         playlist&rsquo;s name, its description or its cover image.
       </p>
+      <p>
+        In <strong>Discover</strong>, it reads the song titles you type into the seed fields.
+        It looks each one up in Spotify&rsquo;s public catalogue to find out which recording
+        you meant, then looks up the tracks it is considering suggesting. For every one of
+        those it reads the same five things listed above. None of this touches your playlists,
+        your library or your listening history — Discover searches the public catalogue, and
+        the only thing it knows about you is what you typed.
+      </p>
 
       <h2>How it is used</h2>
       <p>
         Only to build the sequence you asked for, and only for as long as that takes. Titles
         and artists label the covers; each cover image is reduced to the colour that decides
         where a track sits; the tempo and the explicit flag fill in the read-out and the
-        badge; the link is what the title points at. The playlist exists in your browser
-        while the page is open, and in the server&rsquo;s memory for the length of one
-        request. Reload the page and it is gone.
+        badge; the link is what the title points at. In Discover the same cover colours decide
+        which tracks are close enough to suggest, and the tempo only removes suggestions whose
+        speed is nowhere near your seeds&rsquo;. The playlist, or the list of suggestions,
+        exists in your browser while the page is open, and in the server&rsquo;s memory for the
+        length of one request. Reload the page and it is gone.
       </p>
 
       <h2>Who else sees it</h2>
-      <p>Two services outside Spotify and your browser are involved, both narrowly:</p>
+      <p>Three services outside Spotify and your browser are involved, each narrowly:</p>
       <ul>
         <li>
           <strong>ReccoBeats</strong> (<code>api.reccobeats.com</code>) supplies tempo and
@@ -69,6 +84,16 @@ export default function PrivacyPage() {
           your playlist and nothing else — no session token, no cookie, no account
           identifier, nothing that names or identifies you. It does see which tracks were
           looked up.
+        </li>
+        <li>
+          <strong>Last.fm</strong> (<code>ws.audioscrobbler.com</code>) is asked, in Discover
+          only, which tracks are commonly listened to alongside a given one. This is the one
+          place where something you chose leaves as words rather than as an identifier:
+          Spettro sends it <strong>the title and artist of the songs you seed with</strong>,
+          and nothing else — no session token, no cookie, no account identifier, nothing that
+          names or identifies you, and never anything from a playlist. It is not asked
+          anything in Order, and its answer is used only to decide which tracks are worth
+          looking up; Spettro then ranks them on colour by itself.
         </li>
         <li>
           <strong>Spotify&rsquo;s image servers</strong> (<code>i.scdn.co</code>) hold the
@@ -83,8 +108,9 @@ export default function PrivacyPage() {
       </p>
       <p>
         <strong>Nothing about your music reaches the server log.</strong> Spettro records
-        counts — how many tracks were sequenced, how many covers could not be read — and
-        never a track title, an artist, or the identifier of the playlist you gave it. When
+        counts — how many tracks were sequenced, how many covers could not be read, how many
+        suggestions survived each stage — and never a track title, an artist, the identifier of
+        the playlist you gave it, or the songs you searched from. When
         something fails unexpectedly it logs the kind of failure and not its details, because
         the details would quote the address it failed on and those addresses carry
         identifiers. The detailed diagnostics exist only when Spettro is run on a
@@ -168,8 +194,8 @@ export default function PrivacyPage() {
         The cookies last as long as the table says. Everything else is kept for the length of
         a single request and then discarded. There is no database, no stored copy of your
         playlists and no cache of Spotify content on disk: every request Spettro makes to
-        Spotify and to ReccoBeats is made with caching switched off, so nothing survives
-        between one sequence and the next. Your browser caches the cover images the way it
+        Spotify, to ReccoBeats and to Last.fm is made with caching switched off, so nothing
+        survives between one sequence and the next. Your browser caches the cover images the way it
         caches any image, and you can clear that with your browser.
       </p>
       <p>

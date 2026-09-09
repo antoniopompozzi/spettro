@@ -11,12 +11,13 @@ const CONTACT = 'emoproject230@gmail.com';
 
 export default function TermsPage() {
   return (
-    <LegalPage title="End user agreement" updated="8 September 2026">
+    <LegalPage title="End user agreement" updated="9 September 2026">
       <div className={styles.lede}>
         <p>
           <strong>The short version.</strong> Spettro is an independent project that reads
-          your Spotify playlists to reorder them by colour. It is not made by Spotify and
-          speaks for nobody but itself. Connecting your account means you accept the terms
+          your Spotify playlists to reorder them by colour, and searches Spotify&rsquo;s
+          catalogue to suggest tracks whose cover art is close to yours. It is not made by
+          Spotify and speaks for nobody but itself. Connecting your account means you accept the terms
           below and the{' '}
           <a href="/privacy">privacy policy</a>.
         </p>

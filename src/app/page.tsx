@@ -30,7 +30,14 @@ export default function Home() {
           aria-labelledby="tab-discover"
           hidden={mode !== 'discover'}
         >
-          <DiscoverMode />
+          {/*
+            * Discover is told when it becomes the visible panel so it can
+            * re-read the session. Both panels stay mounted, and the connect
+            * control lives in Order — so a disconnect happens while Discover is
+            * off screen, and without this its suggestions would still be there
+            * when the listener came back to it.
+            */}
+          <DiscoverMode active={mode === 'discover'} />
         </div>
       </main>
     </div>

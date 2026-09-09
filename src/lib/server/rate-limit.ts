@@ -26,6 +26,13 @@ export interface Limit {
 export const AUTH_LIMIT: Limit = { max: 10, windowMs: 10 * 60_000 };
 /** Sequencing: generous for a person, far below what a loop would ask for. */
 export const ORDER_LIMIT: Limit = { max: 12, windowMs: 5 * 60_000 };
+/**
+ * Suggesting: heavier again. One call is up to three requests to Last.fm, five
+ * dozen searches on Spotify, as many covers off its CDN and a round of
+ * ReccoBeats — several times what sequencing a playlist costs upstream, so the
+ * ceiling is lower than Order's despite the window being the same.
+ */
+export const DISCOVER_LIMIT: Limit = { max: 8, windowMs: 5 * 60_000 };
 /** Session reads: cheap and polled by the page, so the ceiling is high. */
 export const READ_LIMIT: Limit = { max: 60, windowMs: 60_000 };
 

@@ -188,7 +188,9 @@ export async function userAccessToken(): Promise<string> {
 
   const refresh = jar.get(REFRESH)?.value;
   if (!refresh) {
-    throw new OrderError(401, 'Connect your Spotify account to read your playlists.');
+    // Both modes reach this: Order reads a playlist, Discover searches the
+    // catalogue, and neither can be done with an app token.
+    throw new OrderError(401, 'Connect your Spotify account — Spettro asks Spotify as you.');
   }
 
   const tokens = await exchange(

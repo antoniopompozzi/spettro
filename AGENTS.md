@@ -8,8 +8,12 @@ Two modes:
 
 - **ORDER** — reorders one of the listener's own Spotify playlists along a
   colour sequence read off the album artwork. Built and working.
-- **DISCOVER** — finds tracks similar to one to three seeds. **Not built.** The
-  UI shell exists and runs on mock data in `src/lib/mock/tracks.ts`.
+- **DISCOVER** — finds tracks similar to one to three seeds. **Built and
+  working, with one gap.** The similarity engine is real and runs on live
+  Last.fm, Spotify and ReccoBeats data. What is missing is the seed picker: a
+  slot is still a bare text field holding a title and nothing else, so the
+  server resolves each typed title against Spotify itself. See *The seed picker
+  does not exist*, below.
 
 This file is the handover between sessions. Everything below is something that
 cost time to discover or a decision whose reasoning is not visible in the code.
@@ -68,8 +72,52 @@ nothing else.** `user-read-private` was removed because the profile is never
 read; keep it removed. Requesting an unused permission would also force the
 privacy policy to disclose a collection that never happens.
 
-Spotify search caps this app at `limit=10` (a development-mode signal), which
-matters if a future feature needs search.
+Spotify search caps this app at `limit=10` (a development-mode signal). This is
+no longer hypothetical: Discover resolves every candidate name through
+`/v1/search`, so ten is all it ever gets to choose from, and `searchTrack` takes
+the first confident match in Spotify's own popularity order.
+
+**Search is called with the listener's token, so Discover needs a sign-in too.**
+There is no client secret, so there is no app token to search with. Both modes
+now go through `userAccessToken`, which is why its 401 no longer mentions
+playlists.
+
+**Spotify's search endpoint answers 502 under no particular load.** It happened
+to all three seeds of one verification run whose titles were spelled perfectly.
+A lookup that never completed and a lookup that found nothing are different
+facts, and `searchTrack` now reports which (`SearchResult.reached`) — collapsing
+them into one `null` is how an outage on Spotify's side came out as "check the
+spelling" on the listener's. Candidate lookups still drop quietly on a failure,
+but are counted apart in `meta.unreachable`.
+
+**One Discover run is expensive enough to trip Spotify's own rate limit, and it
+did.** Three seeds means up to 63 calls to `/v1/search` plus 60 covers off the
+CDN, and after a session of repeated verification runs Spotify started answering
+429 to the first search of a cold server — the app's own limiter reset, the
+counter at zero, and still a 429, which is how it was told apart.
+
+**It does not clear in a few minutes.** Measured: still refusing after 5, after
+9, and after roughly 20, across dev server restarts. Whatever window Spotify
+applies to a development-mode app after sustained search traffic is long enough
+that a verification session can lose the rest of its afternoon to it, so pace
+the runs from the start rather than discovering this at the end.
+
+Two consequences worth keeping: verification has to be paced and never looped;
+and `DISCOVER_LIMIT` at 8 per 5 minutes exists to protect Spotify's quota rather
+than this server's, so lowering the app's own ceiling is the lever if a real
+listener ever hits theirs. `RESOLVE_LIMIT` at 60 is the other lever and the
+cheaper one, since it cuts searches and cover fetches together.
+
+**Last.fm supplies Discover's candidate pool** — `track.getSimilar`, 30 per
+seed, `LASTFM_API_KEY` in `.env.local`, no signature needed for a read. Its
+`match` score is read and discarded on purpose; see the product decision below.
+Error 6 means it has never heard of the track and yields an empty pool, which is
+normal and must not be fatal. Errors 10 and 26 mean the key was refused and
+**throw**, because a bad key would otherwise look exactly like a run of obscure
+seeds: an empty pool every time, with nothing in the log to say why. Even
+functional music has neighbours — a brown noise track returned a full 30 — so a
+seed with none is genuinely rare, and `Womb Sound Shusher` is the one known
+example if the empty state ever needs testing again.
 
 ---
 
@@ -116,6 +164,45 @@ are genuinely different.
 **A track with no tempo keeps `bpm: null`, never `0`.** It stays in the grid and
 sits out rhythmic comparison only. Roughly 10-25% of a playlist has no tempo
 from anyone. The read-out says how many tracks its figure speaks for.
+
+**Discover ranks on colour, and on nothing anybody else calls similarity.** Two
+tracks are neighbours when the dominant colours of their artwork are close — the
+same dominant-cluster colour Order sorts by, read by the same `coverColour` —
+averaged over the seeds that named the candidate. Last.fm only names the pool,
+and ReccoBeats only removes from it. A similarity score from a third party would
+make Spettro a wrapper around somebody else's idea of similarity, which is not
+the thesis.
+
+**Distance uses the continuous values, never the eleven bands.** A band answers
+"where on one line does this cover go": it discards chroma and reduces hue to
+which of eleven buckets it fell in, so two covers a degree apart across a border
+land in different bands, while a pale cream and a dark olive land in the same
+one. Those are exactly the border cases recorded further down this file, and
+they are the ones a distance must not be wrong about. `oklabDistance` is plain
+Euclidean distance in OKLab, which needs no weights balancing lightness against
+chroma against hue, because the space already carries that — and a weight chosen
+by hand would be one more constant tuned against one playlist.
+
+**Seed agreement outranks colour.** A track two seeds both point at is about
+both of them, and choosing a second seed is how the listener said so; colour
+breaks the tie. A candidate is also measured only against the seeds that named
+it, because a seed that never proposed it has no opinion about it.
+
+**The tempo filter is blunt, and measurably blunter at slow tempos.** 25% around
+the seeds' average, as specified. Measured, one seed each: `Karma Police` at 75
+BPM dropped 22 of 30 candidates and returned 8; `Sicko Mode` at 155 dropped 6
+and returned a full 20; `Blinding Lights` at 171 dropped 18 and returned 12.
+Three seeds average out and behave — 26 of 57 dropped, 20 returned. The cause is
+that a relative tolerance is a narrow absolute window at a low tempo (±19 BPM at
+75, ±39 at 155) and octave ambiguity lands in the gap: at a slow seed, every
+candidate ReccoBeats read at the doubled octave is 100% away and goes.
+
+**Both obvious fixes are refused, and the second one is the trap.** Octave
+normalisation is already a standing decision in the other direction. Widening
+the tolerance would be a constant tuned to three seeds, which is the mistake the
+neutral gate made. A single slow seed returning eight suggestions is the honest
+cost of both refusals, not an oversight. If it is ever changed, change it
+against a measured set and write the set down here.
 
 Deezer was the original source for artwork and tempo and is **no longer in the
 pipeline**. Its trap is worth remembering: it answered `bpm: 0` far more often
@@ -175,9 +262,17 @@ policy states this, so a change here is a change to a published promise.
 
 `/privacy` and `/terms` describe the implementation exactly and are linked
 beside the connect button so they are reachable before sign-in. The cookie
-table, the list of what is read, and the named third party (ReccoBeats,
-receiving Spotify track ids and nothing else) are all statements about code:
-change one and the other must follow.
+table, the list of what is read, and the named third parties are all statements
+about code: change one and the other must follow.
+
+**There are two third parties now, and they are not the same kind.** ReccoBeats
+receives base-62 track ids — opaque strings that say nothing without Spotify's
+catalogue to resolve them against. **Last.fm receives the title and artist of
+the seeds, in words**, which is legible on its own and is a statement about
+somebody's taste. The privacy policy says so in those terms rather than listing
+a hostname and leaving it there. Last.fm is asked nothing at all in Order and is
+never sent anything from a playlist. If a change ever sends it more than the
+seeds, that page changes with it.
 
 ---
 
@@ -255,6 +350,19 @@ Playlists used for verification so far, both owned by the account that signs in
   achromatic covers at all, and it contains eight tracks from one album — the
   case that makes a hue band look over-crowded when it is not.
 
+Seeds used to verify Discover, each chosen for what it exercises:
+
+- `Karma Police` — one seed, slow (75 BPM), the case where the tempo filter
+  bites hardest and the list comes back at 8.
+- `Karma Police` + `Paranoid Android` + `Everlong` — three seeds, a full 20 back,
+  and the case that shows the ranking: two `seedMatches: 3` rows first, then the
+  2s, then the 1s, each group sorted by colour distance. Two rows come back at
+  distance exactly 0.0000 because they are other tracks from *OK Computer* and
+  share the seed's cover.
+- `Womb Sound Shusher` — resolves on Spotify, has no Last.fm neighbours at all,
+  and has no tempo either, so it is the only known way to reach both the empty
+  state and the branch where the tempo filter does not run.
+
 Useful OKLCH anchors: red 29°, orange 53°, gold 95°, yellow 110°, green 142°,
 turquoise 185°, cyan 195°, sky 226°, blue 264°, indigo 302°, purple 328°,
 pink 352°. Indigo and blue-violet land within a degree of each other and part on
@@ -282,12 +390,33 @@ is how the neutral gate went wrong.
 
 ---
 
+## The seed picker does not exist
+
+The brief for the similarity engine described the seed slots as already done and
+not to be touched: search with instant suggestions, each seed carrying a title,
+an artist and a Spotify id. **None of that is in the code.** `SeedSlots` is
+three plain text inputs, `Seed` is `{ title }`, and no search route has ever
+existed — `git log --diff-filter=A -- 'src/app/api/**'` confirms it.
+
+Rather than build it unasked, the engine takes a seed in either shape.
+`DiscoverSeed` carries an optional `artist` and `spotifyId`; when they are
+absent the server resolves the bare title through the same `searchTrack` the
+candidates go through, and when they are present it fetches by id instead —
+searching again for a record somebody already chose risks answering with a
+different pressing, and so with a different colour to compare against.
+
+The picker can therefore be built later without touching the engine at all. What
+it has to do is send `artist` and `spotifyId` alongside the title. Until then a
+seed is whatever Spotify's search thinks a typed title meant, which is usually
+right, and is the reason `meta.seedsResolved` is worth reading.
+
 ## What is left
 
 - **Part D — accessibility.**
-- **DISCOVER**, including instant-suggestion search for the seeds. ReccoBeats
-  also offers seed-based recommendations; whether it replaces or joins Last.fm
-  is undecided.
+- **The Discover seed picker**, above. ReccoBeats also offers seed-based
+  recommendations; whether that replaces or joins Last.fm is still undecided,
+  and since the pool is the only thing Last.fm is used for, swapping it is a
+  change confined to `collectCandidates`.
 - **The first Vercel deploy.** The code no longer assumes a host: the origin
   comes from `src/lib/server/base-url.ts`, which prefers `SPETTRO_BASE_URL`,
   falls back to `VERCEL_PROJECT_PRODUCTION_URL`, and otherwise uses

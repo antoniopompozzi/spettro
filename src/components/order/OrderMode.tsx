@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ScanBar } from '@/components/ScanBar';
+import { SpotifyAttribution } from '@/components/SpotifyAttribution';
 import { PlaylistForm } from '@/components/ui/PlaylistForm';
 import { useOrderSequence } from '@/hooks/useOrderSequence';
 import { isSpotifyPlaylistUrl } from '@/lib/playlist';
@@ -11,7 +12,6 @@ import { sequenceStats } from '@/lib/stats';
 import { EmptyState } from './EmptyState';
 import styles from './OrderMode.module.css';
 import { SpectrumGrid } from './SpectrumGrid';
-import { SpotifyAttribution } from './SpotifyAttribution';
 import { SpotifyConnect } from './SpotifyConnect';
 import { StatsPanel } from './StatsPanel';
 

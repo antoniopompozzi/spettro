@@ -1,0 +1,20 @@
+.panel {
+  padding: 44px 32px;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.heading {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--green-5);
+}
+
+.body {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  text-wrap: pretty;
+}

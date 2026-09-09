@@ -27,6 +27,13 @@ export interface CoverColour {
   /** OKLCH hue in degrees, `null` when the cover is neutral. */
   hue: number | null;
   /**
+   * OKLCH chroma of `color` — how far it sits from grey. Order never reads it:
+   * a band is chosen by hue and sorted by lightness. Discover does, because
+   * measuring how close two colours are needs the whole colour and not the two
+   * thirds of it a band is drawn from.
+   */
+  chroma: number;
+  /**
    * OKLab lightness of `color` — the dominant cluster's own, or the image mean
    * when the cover is neutral. Orders covers inside a band, so the ribbon under
    * the artwork runs dark to light in step with the sequence.
@@ -172,8 +179,15 @@ export async function coverColour(url: string): Promise<CoverColour | null> {
     // Mostly black, white or grey: no hue worth ordering by, so the image mean
     // is both the colour to show and the lightness that places it.
     if (chromatic.length / total < NEUTRAL_SHARE) {
-      const [lightness] = linearToOklab(mean.r, mean.g, mean.b);
-      return { color: linearToHex(mean.r, mean.g, mean.b), hue: null, lightness };
+      const [lightness, a, b] = linearToOklab(mean.r, mean.g, mean.b);
+      return {
+        color: linearToHex(mean.r, mean.g, mean.b),
+        hue: null,
+        // Small by definition — the gate only reached here because too few
+        // pixels carried hue — but it is the cover's own, not an assumed zero.
+        chroma: Math.hypot(a, b),
+        lightness,
+      };
     }
 
     const dominant = dominantCluster(chromatic);
@@ -182,6 +196,7 @@ export async function coverColour(url: string): Promise<CoverColour | null> {
       // actually in the picture above it.
       color: toHex(dominant.L, dominant.a, dominant.b),
       hue: oklchHue(dominant.a, dominant.b),
+      chroma: Math.hypot(dominant.a, dominant.b),
       lightness: dominant.L,
     };
   } catch {
