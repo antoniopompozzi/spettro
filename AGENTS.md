@@ -106,6 +106,17 @@ reads, because "try again in a minute" is a promise this app cannot keep and had
 been making. **Read the header before theorising about the duration** — it was
 there the whole time.
 
+**The block is scoped to `/v1/search`, not to the app.** Measured with the same
+token in the same session, while search was refusing with 19 hours on the
+clock: `/v1/playlists/{id}/items` answered 200 and sequenced a 24-track playlist
+in 1.7s with nothing dropped, and `/v1/tracks/{id}` answered fine too — a seed
+given by id resolved and Last.fm was reached before search refused again. So
+**Order stays completely usable while Discover is blocked**, and it is worth
+checking which endpoint is actually refusing before assuming the app is down.
+
+Discover is blocked either way, because candidate resolution goes through
+search for every name Last.fm returns, and the seed picker is search itself.
+
 The practical consequence is a budget, not a nuisance. A development-mode app
 has roughly one afternoon of hard searching in it per day, and one three-seed
 Discover run is 63 searches. Plan verification around that: pace the runs, never
