@@ -48,9 +48,28 @@
   border-color: var(--green-1);
 }
 
+/*
+ * The explanation and the two agreements, stacked on a narrow screen and side
+ * by side on a wide one. Stacked at every width they left the right two thirds
+ * of the row empty and put the links on a line of their own carrying two short
+ * words, which read as a stray footer rather than part of this block.
+ */
+.detail {
+  margin-top: 10px;
+}
+
+@media (min-width: 761px) {
+  .detail {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--gap);
+  }
+}
+
 /* What Spettro will read, or what disconnecting does — before either decision. */
 .note {
-  margin: 10px 0 0;
+  margin: 0;
   max-width: 62ch;
   font-size: 12px;
   line-height: 1.5;
@@ -67,6 +86,25 @@
   gap: 10px;
   margin: 8px 0 0;
   color: var(--text-placeholder);
+}
+
+/*
+ * In the second column the two links are one under the other, so the separator
+ * has nothing to separate. It stays in the markup for the stacked layout.
+ */
+@media (min-width: 761px) {
+  .links {
+    flex: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    margin: 0;
+    text-align: right;
+  }
+
+  .separator {
+    display: none;
+  }
 }
 
 .links a {
