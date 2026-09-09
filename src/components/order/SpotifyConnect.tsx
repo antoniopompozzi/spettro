@@ -42,31 +42,35 @@ export function SpotifyConnect({ connected, onDisconnect }: SpotifyConnectProps)
         )}
       </div>
 
-      <p className={styles.note}>
-        {connected ? (
-          <>
-            Disconnecting deletes your session here immediately and Spettro stops being able
-            to reach your account. It stores nothing else, so nothing is left behind. You can
-            also withdraw access from{' '}
-            <a href={SPOTIFY_APPS} target="_blank" rel="noreferrer">
-              your Spotify account settings
-            </a>
-            .
-          </>
-        ) : (
-          <>
-            Spettro reads the tracks of the playlist you paste — their titles, artists and
-            cover art — to work out the colour order. It never reads your profile and keeps
-            nothing on a server.
-          </>
-        )}
-      </p>
+      <div className={styles.detail}>
+        <p className={styles.note}>
+          {connected ? (
+            <>
+              Disconnecting deletes your session here immediately and Spettro stops being able
+              to reach your account. It stores nothing else, so nothing is left behind. You can
+              also withdraw access from{' '}
+              <a href={SPOTIFY_APPS} target="_blank" rel="noreferrer">
+                your Spotify account settings
+              </a>
+              .
+            </>
+          ) : (
+            <>
+              Spettro reads the tracks of the playlist you paste — their titles, artists and
+              cover art — to work out the colour order. It never reads your profile and keeps
+              nothing on a server.
+            </>
+          )}
+        </p>
 
-      <p className={`${styles.links} microLabel`}>
-        <Link href="/privacy">Privacy policy</Link>
-        <span aria-hidden="true">·</span>
-        <Link href="/terms">Terms</Link>
-      </p>
+        <p className={`${styles.links} microLabel`}>
+          <Link href="/privacy">Privacy policy</Link>
+          <span className={styles.separator} aria-hidden="true">
+            ·
+          </span>
+          <Link href="/terms">Terms</Link>
+        </p>
+      </div>
     </section>
   );
 }

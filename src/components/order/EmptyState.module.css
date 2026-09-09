@@ -1,5 +1,11 @@
+/*
+ * The inset matches the input field above it (22px), so the first character of
+ * the card lines up with the first character of the field rather than sitting
+ * ten pixels further in. 32px vertical is twice the stack's own gap; 44px made
+ * a placeholder the tallest thing on the page.
+ */
 .panel {
-  padding: 44px 32px;
+  padding: 32px 22px;
   background: var(--surface);
   border-radius: var(--radius);
 }

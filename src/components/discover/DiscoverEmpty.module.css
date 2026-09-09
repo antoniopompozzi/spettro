@@ -1,5 +1,11 @@
+/*
+ * Same inset as Order's empty card, and within two pixels of the seed fields
+ * above, so the card's first character lines up with the column it sits in
+ * rather than starting ten pixels further in. 32px vertical is twice the
+ * stack's own gap; 44px made a placeholder the tallest thing on the page.
+ */
 .panel {
-  padding: 44px 32px;
+  padding: 32px 22px;
   background: var(--surface);
   border-radius: var(--radius);
 }
