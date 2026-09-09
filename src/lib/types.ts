@@ -51,10 +51,6 @@ export interface SequencedTrack extends Track {
   position: number;
 }
 
-export interface Recommendation extends Track {
-  bpm: number;
-}
-
 export interface Stat {
   label: string;
   value: string;
