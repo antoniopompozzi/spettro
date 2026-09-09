@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScanBar } from '@/components/ScanBar';
 import { SpotifyAttribution } from '@/components/SpotifyAttribution';
 import { PlaylistForm } from '@/components/ui/PlaylistForm';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useOrderSequence } from '@/hooks/useOrderSequence';
 import { isSpotifyPlaylistUrl } from '@/lib/playlist';
 import { sequenceStats } from '@/lib/stats';
@@ -24,6 +25,27 @@ export function OrderMode() {
   const [connected, setConnected] = useState<boolean | null>(null);
   const { phase, revealed, tracks, meta, error, setError, start, reset } = useOrderSequence();
   const stats = useMemo(() => sequenceStats(tracks, meta?.dropped ?? 0), [tracks, meta]);
+
+  /*
+   * The read-out comes before the grid on a wide screen and after it on a
+   * phone, where the grid is the thing worth seeing first and three cards
+   * ahead of it push it off the fold.
+   *
+   * This moves the markup rather than setting `order` on the stack, and that is
+   * the whole point of doing it here. `order` moves what is painted and leaves
+   * the document alone, so Tab and a screen reader would still have gone
+   * through the figures before reaching the covers, against what is on screen.
+   * The grid has the same rule written into it already — the serpentine turn is
+   * drawn with `direction`, and its DOM stays in sequence order for exactly
+   * this reason. Rendering in one place or the other keeps the two orders the
+   * same one, and there is nothing to keep in step afterwards.
+   *
+   * `useMediaQuery` reads `false` before the client has measured. Nothing
+   * depends on that: the read-out exists only once a sequence has been run,
+   * which is long after.
+   */
+  const wide = useMediaQuery('(min-width: 761px)');
+  const readout = phase === 'result' ? <StatsPanel stats={stats} /> : null;
 
   const refreshSession = useCallback(
     () =>
@@ -87,12 +109,17 @@ export function OrderMode() {
       />
 
       {phase === 'empty' ? <EmptyState /> : null}
-      {phase === 'result' ? <StatsPanel stats={stats} /> : null}
-      {/* Wherever Spotify's covers and metadata show, so does its mark. */}
+      {wide ? readout : null}
+      {/*
+        * Wherever Spotify's covers and metadata show, so does its mark — and
+        * above the grid at both widths, which is where the guidelines put it.
+        * Only the read-out changes sides.
+        */}
       {phase === 'empty' ? null : <SpotifyAttribution />}
       {phase === 'processing' || phase === 'result' ? (
         <SpectrumGrid tracks={tracks} revealed={phase === 'processing' ? revealed : null} />
       ) : null}
+      {wide ? null : readout}
     </div>
   );
 }

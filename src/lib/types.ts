@@ -54,6 +54,15 @@ export interface SequencedTrack extends Track {
 export interface Stat {
   label: string;
   value: string;
+  /** A smaller second line under the value — the tempo's coverage tally. */
+  detail?: string;
+  /**
+   * What `detail` means, read in its place. "44/50" under a number says
+   * nothing on its own to somebody who cannot see the card it is sitting in.
+   */
+  detailLabel?: string;
+  /** Hue in degrees, drawn as a patch of that hue beside the value. */
+  swatchHue?: number;
 }
 
 /**

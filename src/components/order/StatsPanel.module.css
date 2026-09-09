@@ -1,18 +1,36 @@
+/*
+ * One row at every width, and for however many cards there are. `grid-auto-flow:
+ * column` means the three figures divide the row between them without a column
+ * count declared anywhere that has to be kept in step with them — which is what
+ * the fixed `repeat(4, 1fr)` was, and it went stale the moment Bands was
+ * dropped. `minmax(0, …)` and not a bare `1fr`: a track's automatic minimum is
+ * its min-content width, so the longest value would otherwise widen its own
+ * column and squeeze the other two.
+ */
 .panel {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: var(--gap);
 }
 
-@media (min-width: 761px) {
-  .panel {
-    grid-template-columns: repeat(4, 1fr);
+/*
+ * A fourth card appears only when covers were dropped. Three fit across a phone
+ * and were asked to; a fourth at the same width leaves about 56px of text
+ * column, which breaks "128 BPM" across two lines. It wraps to two rows there
+ * instead — the normal read-out keeps its single row, and the degraded one
+ * stays legible rather than staying in line.
+ */
+@media (max-width: 760px) {
+  .panel:has(> :nth-child(4)) {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
 .card {
   min-width: 0;
-  padding: 20px 22px;
+  padding: 14px 13px;
   background: var(--surface);
   border-radius: var(--radius);
 }
@@ -21,16 +39,68 @@
   color: var(--text-dim);
 }
 
+/* The figure and, where there is one, its swatch — one line, always. */
+.figure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 10px;
+}
+
 .value {
-  margin-top: 12px;
-  font-size: 22px;
+  min-width: 0;
+  font-size: 17px;
   letter-spacing: -0.01em;
   color: var(--green-2);
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 760px) {
+/*
+ * The dominant hue, drawn. The colour is computed from the same angle printed
+ * beside it and from nothing else, so the patch cannot drift away from the
+ * number — see `hueSwatchHex`.
+ */
+.swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+/*
+ * The tempo's coverage. It used to sit in brackets beside the BPM, where it
+ * read as part of the figure; smaller and under it, it reads as the footnote
+ * it is, and the number keeps the card to itself.
+ */
+.detail {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-dim);
+}
+
+@media (min-width: 761px) {
+  .card {
+    padding: 20px 22px;
+  }
+
+  .figure {
+    gap: 10px;
+    margin-top: 12px;
+  }
+
   .value {
-    font-size: 17px;
+    font-size: 22px;
+  }
+
+  .swatch {
+    width: 14px;
+    height: 14px;
+  }
+
+  .detail {
+    margin-top: 5px;
+    font-size: 12px;
   }
 }
