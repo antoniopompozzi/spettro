@@ -95,6 +95,40 @@ function isSpotifyApiUrl(value: string): boolean {
   }
 }
 
+/**
+ * Spotify's 429, with however long it says to wait.
+ *
+ * `Retry-After` is logged because nothing else measures this. A development
+ * mode app that has been searching hard gets blocked for far longer than the
+ * rolling window suggests — long enough to cost a verification session an
+ * afternoon — and until this was read, the only evidence of the duration was
+ * noticing it was still refusing an hour later.
+ *
+ * The sentence changes with the number rather than promising a minute it cannot
+ * keep. Telling somebody to try again shortly, when the wait is an hour, is
+ * worse than telling them nothing.
+ */
+function spotifyRateLimited(response: Response): OrderError {
+  const after = Number(response.headers.get('retry-after'));
+  const seconds = Number.isFinite(after) && after > 0 ? after : null;
+  console.warn(`[spotify] rate-limited, retry-after ${seconds === null ? 'unstated' : `${seconds}s`}`);
+
+  if (seconds === null) {
+    return new OrderError(429, 'Spotify is rate-limiting Spettro right now. Try again shortly.');
+  }
+  if (seconds > 300) {
+    const minutes = Math.ceil(seconds / 60);
+    return new OrderError(
+      429,
+      `Spotify is rate-limiting Spettro and has asked for ${minutes} minutes. Nothing is wrong with what you typed.`,
+    );
+  }
+  return new OrderError(
+    429,
+    `Spotify is rate-limiting Spettro right now. Try again in about ${Math.max(1, Math.ceil(seconds / 60))} minute${seconds > 60 ? 's' : ''}.`,
+  );
+}
+
 async function readPage(url: string): Promise<ItemPage> {
   if (!isSpotifyApiUrl(url)) {
     throw new OrderError(502, 'Spotify answered with something Spettro could not follow.');
@@ -126,7 +160,7 @@ async function readPage(url: string): Promise<ItemPage> {
     throw new OrderError(404, 'That playlist does not exist, or it is not visible to you.');
   }
   if (response.status === 429) {
-    throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
+    throw spotifyRateLimited(response);
   }
   throw new OrderError(502, `Spotify answered ${response.status} while reading the playlist.`);
 }
@@ -225,7 +259,7 @@ async function runSearch(
       throw new OrderError(401, 'That Spotify connection has expired. Connect your account again.');
     }
     if (response.status === 429) {
-      throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
+      throw spotifyRateLimited(response);
     }
     if (!response.ok) {
       console.warn(`[spotify] search answered ${response.status}`);
@@ -321,7 +355,7 @@ export async function fetchTrack(spotifyId: string): Promise<SpotifyTrack | null
       throw new OrderError(401, 'That Spotify connection has expired. Connect your account again.');
     }
     if (response.status === 429) {
-      throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
+      throw spotifyRateLimited(response);
     }
     if (!response.ok) {
       console.warn(`[spotify] track lookup answered ${response.status}`);
