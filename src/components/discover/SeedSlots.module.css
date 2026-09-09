@@ -17,6 +17,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* The results list is positioned against this, not against the field, so it
+     spans the whole slot width rather than starting inside the padding. */
+  position: relative;
 }
 
 .label {
@@ -96,4 +99,139 @@
 .clear:hover {
   background: var(--surface-raised);
   color: var(--green-2);
+}
+
+/*
+ * The state line under a field.
+ *
+ * It keeps its height whether or not it says anything, because all four of its
+ * states arrive while somebody is typing into the field above it — a line that
+ * appeared and vanished would push the field, and on mobile the whole stack,
+ * around under their hands.
+ */
+.under {
+  margin: 0;
+  min-height: 16px;
+  font-size: 12px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The artist of what is picked: the confirmation that the right record is held. */
+.picked {
+  color: var(--green-2);
+}
+
+/*
+ * Editing a slot that already holds a pick. Amber-free palette, so this is
+ * said in words rather than colour — the seed has not changed yet, and that is
+ * a fact a colour cannot carry.
+ */
+.replacing {
+  color: var(--text-dim);
+}
+
+.searching,
+.none {
+  color: var(--text-dim);
+}
+
+/*
+ * The suggestions.
+ *
+ * Absolute, so opening one does not push the other two slots down the page —
+ * on mobile they are stacked, and a list that reflowed the column would move
+ * the next field under the reader's thumb.
+ */
+.list {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--green-4);
+  border-radius: var(--radius-inner);
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.55);
+}
+
+/*
+ * `display: none` rather than unmounting, so the listbox `aria-controls` points
+ * at is always in the document. A control that refers to an element which is
+ * not there is a broken reference, not an empty list.
+ */
+.hidden {
+  display: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius-cover);
+  cursor: pointer;
+}
+
+/*
+ * One highlight for both pointer and keyboard. `aria-activedescendant` leaves
+ * focus in the input, so the browser draws nothing here by itself — without
+ * this the arrow keys would move an invisible cursor.
+ */
+.option.active {
+  background: var(--surface);
+}
+
+.thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-artwork);
+  background: var(--surface);
+  /* Square art in a square frame: there is never anything to crop. */
+  object-fit: cover;
+}
+
+.optionText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.optionTitle,
+.optionArtist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionTitle {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.optionArtist {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.explicit {
+  flex: none;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text-dim);
+  font-size: 9px;
+  line-height: 14px;
 }
