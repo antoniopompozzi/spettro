@@ -93,11 +93,20 @@ but are counted apart in `meta.unreachable`.
 **One Discover run is expensive enough to trip Spotify's own rate limit, and it
 did.** Three seeds means up to 63 calls to `/v1/search` plus 60 covers off the
 CDN, and after a session of repeated verification runs Spotify started answering
-429 to the first search of a cold server. It clears on its own. Two consequences
-worth keeping: verification has to be paced, not looped; and `DISCOVER_LIMIT` at
-8 per 5 minutes exists to protect Spotify's quota rather than this server's, so
-lowering the app's own ceiling is the lever if a real listener ever hits theirs.
-`RESOLVE_LIMIT` at 60 is the other lever and the cheaper one.
+429 to the first search of a cold server — the app's own limiter reset, the
+counter at zero, and still a 429, which is how it was told apart.
+
+**It does not clear in a few minutes.** Measured: still refusing after 5, after
+9, and after roughly 20, across dev server restarts. Whatever window Spotify
+applies to a development-mode app after sustained search traffic is long enough
+that a verification session can lose the rest of its afternoon to it, so pace
+the runs from the start rather than discovering this at the end.
+
+Two consequences worth keeping: verification has to be paced and never looped;
+and `DISCOVER_LIMIT` at 8 per 5 minutes exists to protect Spotify's quota rather
+than this server's, so lowering the app's own ceiling is the lever if a real
+listener ever hits theirs. `RESOLVE_LIMIT` at 60 is the other lever and the
+cheaper one, since it cuts searches and cover fetches together.
 
 **Last.fm supplies Discover's candidate pool** — `track.getSimilar`, 30 per
 seed, `LASTFM_API_KEY` in `.env.local`, no signature needed for a read. Its
