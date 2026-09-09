@@ -90,6 +90,15 @@ them into one `null` is how an outage on Spotify's side came out as "check the
 spelling" on the listener's. Candidate lookups still drop quietly on a failure,
 but are counted apart in `meta.unreachable`.
 
+**One Discover run is expensive enough to trip Spotify's own rate limit, and it
+did.** Three seeds means up to 63 calls to `/v1/search` plus 60 covers off the
+CDN, and after a session of repeated verification runs Spotify started answering
+429 to the first search of a cold server. It clears on its own. Two consequences
+worth keeping: verification has to be paced, not looped; and `DISCOVER_LIMIT` at
+8 per 5 minutes exists to protect Spotify's quota rather than this server's, so
+lowering the app's own ceiling is the lever if a real listener ever hits theirs.
+`RESOLVE_LIMIT` at 60 is the other lever and the cheaper one.
+
 **Last.fm supplies Discover's candidate pool** — `track.getSimilar`, 30 per
 seed, `LASTFM_API_KEY` in `.env.local`, no signature needed for a read. Its
 `match` score is read and discarded on purpose; see the product decision below.
