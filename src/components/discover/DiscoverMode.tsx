@@ -6,14 +6,14 @@ import { ScanBar } from '@/components/ScanBar';
 import { SpotifyAttribution } from '@/components/SpotifyAttribution';
 import { FormError } from '@/components/ui/FormError';
 import { useDiscover } from '@/hooks/useDiscover';
-import type { DiscoverSeed, Seed } from '@/lib/types';
+import type { DiscoverSeed, SeedSlot } from '@/lib/types';
 
 import { DiscoverEmpty } from './DiscoverEmpty';
 import { DiscoverResults } from './DiscoverResults';
 import styles from './DiscoverMode.module.css';
 import { SeedSlots } from './SeedSlots';
 
-const EMPTY_SEEDS: Seed[] = [null, null, null];
+const EMPTY_SEEDS: SeedSlot[] = [null, null, null];
 
 const NOT_CONNECTED =
   'Connect your Spotify account under Order first — Spettro searches Spotify as you.';
@@ -21,7 +21,7 @@ const NOT_CONNECTED =
 function hintFor(count: number): string {
   switch (count) {
     case 0:
-      return 'Set at least one seed to search. Type up to three song titles.';
+      return 'Search for a song and pick it from the list. Up to three.';
     case 1:
       return 'With one seed the results stay close to that track.';
     case 2:
@@ -32,11 +32,11 @@ function hintFor(count: number): string {
 }
 
 export function DiscoverMode({ active }: { active: boolean }) {
-  const [seeds, setSeeds] = useState<Seed[]>(EMPTY_SEEDS);
+  const [seeds, setSeeds] = useState<SeedSlot[]>(EMPTY_SEEDS);
   const [connected, setConnected] = useState<boolean | null>(null);
   const { phase, results, error, setError, start, reset } = useDiscover();
 
-  const filled = seeds.filter((seed): seed is NonNullable<Seed> => Boolean(seed));
+  const filled = seeds.filter((seed): seed is NonNullable<SeedSlot> => Boolean(seed));
 
   // Discover reaches Spotify as the listener for the same reason Order does:
   // this app has no client secret, so the catalogue is searched with the user's
@@ -58,7 +58,7 @@ export function DiscoverMode({ active }: { active: boolean }) {
       .catch(() => setConnected(false));
   }, [active, reset]);
 
-  const writeSlot = (index: number, seed: Seed) => {
+  const writeSlot = (index: number, seed: SeedSlot) => {
     setSeeds((current) => current.map((existing, i) => (i === index ? seed : existing)));
     setError(null);
   };
@@ -68,10 +68,15 @@ export function DiscoverMode({ active }: { active: boolean }) {
       setError(NOT_CONNECTED);
       return;
     }
-    // A slot holds a title and nothing else today. The API takes an artist and
-    // a Spotify id alongside it when a pick carries them, and resolves the bare
-    // title against Spotify when it does not — so this passes what it has.
-    const given: DiscoverSeed[] = filled.map((seed) => ({ title: seed.title }));
+    // Every seed arrives from the picker already resolved, so all three fields
+    // travel. The engine then fetches each one by id rather than searching its
+    // title again — which is the difference between ranking against the sleeve
+    // the listener actually saw and against whichever pressing search returns.
+    const given: DiscoverSeed[] = filled.map((seed) => ({
+      title: seed.title,
+      artist: seed.artist,
+      spotifyId: seed.spotifyId,
+    }));
     void start(given);
   }, [connected, filled, setError, start]);
 
@@ -83,7 +88,7 @@ export function DiscoverMode({ active }: { active: boolean }) {
 
       <SeedSlots
         seeds={seeds}
-        onType={(index, title) => writeSlot(index, title ? { title } : null)}
+        onSelect={(index, seed) => writeSlot(index, seed)}
         onClear={(index) => writeSlot(index, null)}
       />
 
@@ -101,14 +106,16 @@ export function DiscoverMode({ active }: { active: boolean }) {
 
       <FormError id="discover-error">{error}</FormError>
 
+      {/*
+        * The mark used to appear with the results, because that was the only
+        * place Spotify's content reached the screen. The seed picker now shows
+        * its covers and its metadata from the second character typed, so the
+        * mark belongs to the whole panel and stands whatever state it is in.
+        */}
+      <SpotifyAttribution label="Search, track data and cover colours" />
+
       {phase === 'empty' ? <DiscoverEmpty /> : null}
-      {/* Wherever Spotify's metadata shows, so does its mark. */}
-      {phase === 'results' ? (
-        <>
-          <SpotifyAttribution label="Track data and cover colours" />
-          <DiscoverResults items={results} />
-        </>
-      ) : null}
+      {phase === 'results' ? <DiscoverResults items={results} /> : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { isConfidentMatch } from '@/lib/match';
+import type { SeedSuggestion } from '@/lib/types';
 import { isSpotifyImageUrl } from '@/lib/spotify-cdn';
 
 import { OrderError } from './errors';
@@ -94,6 +95,40 @@ function isSpotifyApiUrl(value: string): boolean {
   }
 }
 
+/**
+ * Spotify's 429, with however long it says to wait.
+ *
+ * `Retry-After` is logged because nothing else measures this. A development
+ * mode app that has been searching hard gets blocked for far longer than the
+ * rolling window suggests — long enough to cost a verification session an
+ * afternoon — and until this was read, the only evidence of the duration was
+ * noticing it was still refusing an hour later.
+ *
+ * The sentence changes with the number rather than promising a minute it cannot
+ * keep. Telling somebody to try again shortly, when the wait is an hour, is
+ * worse than telling them nothing.
+ */
+function spotifyRateLimited(response: Response): OrderError {
+  const after = Number(response.headers.get('retry-after'));
+  const seconds = Number.isFinite(after) && after > 0 ? after : null;
+  console.warn(`[spotify] rate-limited, retry-after ${seconds === null ? 'unstated' : `${seconds}s`}`);
+
+  if (seconds === null) {
+    return new OrderError(429, 'Spotify is rate-limiting Spettro right now. Try again shortly.');
+  }
+  if (seconds > 300) {
+    const minutes = Math.ceil(seconds / 60);
+    return new OrderError(
+      429,
+      `Spotify is rate-limiting Spettro and has asked for ${minutes} minutes. Nothing is wrong with what you typed.`,
+    );
+  }
+  return new OrderError(
+    429,
+    `Spotify is rate-limiting Spettro right now. Try again in about ${Math.max(1, Math.ceil(seconds / 60))} minute${seconds > 60 ? 's' : ''}.`,
+  );
+}
+
 async function readPage(url: string): Promise<ItemPage> {
   if (!isSpotifyApiUrl(url)) {
     throw new OrderError(502, 'Spotify answered with something Spettro could not follow.');
@@ -125,7 +160,7 @@ async function readPage(url: string): Promise<ItemPage> {
     throw new OrderError(404, 'That playlist does not exist, or it is not visible to you.');
   }
   if (response.status === 429) {
-    throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
+    throw spotifyRateLimited(response);
   }
   throw new OrderError(502, `Spotify answered ${response.status} while reading the playlist.`);
 }
@@ -194,6 +229,52 @@ export interface SearchResult {
 }
 
 /**
+ * One call to `/v1/search`, shared by everything that needs it.
+ *
+ * There is one request here and two very different readings of its answer. The
+ * engine wants the single record a name refers to and checks the match itself;
+ * the seed picker wants the whole list, because a person looking at ten covers
+ * is a better judge than any string comparison. Both must ask Spotify the same
+ * way, or a seed picked from the list could resolve differently from the same
+ * seed typed as text.
+ */
+async function runSearch(
+  terms: string,
+): Promise<{ items: SpotifyObject[]; reached: boolean }> {
+  const url = `${API_BASE}/search?${new URLSearchParams({
+    q: terms,
+    type: 'track',
+    limit: String(SEARCH_LIMIT),
+  })}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: { authorization: `Bearer ${await userAccessToken()}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    // These two are true of the whole run, not of this candidate: failing them
+    // quietly would empty the pool one silent drop at a time.
+    if (response.status === 401) {
+      throw new OrderError(401, 'That Spotify connection has expired. Connect your account again.');
+    }
+    if (response.status === 429) {
+      throw spotifyRateLimited(response);
+    }
+    if (!response.ok) {
+      console.warn(`[spotify] search answered ${response.status}`);
+      return { items: [], reached: false };
+    }
+    const page = (await response.json()) as SearchResponse;
+    return { items: page.tracks?.items ?? [], reached: true };
+  } catch (cause) {
+    if (cause instanceof OrderError) throw cause;
+    console.warn('[spotify] search failed to reach the API');
+    return { items: [], reached: false };
+  }
+}
+
+/**
  * The one track in Spotify's catalogue that a title and artist name, or `null`.
  *
  * This is the bridge Discover stands on: Last.fm answers in text, and a colour
@@ -219,39 +300,10 @@ export async function searchTrack(title: string, artist?: string): Promise<Searc
   // An empty query is a fact about the input, not a failure to reach anything.
   if (!terms) return { track: null, reached: true };
 
-  const url = `${API_BASE}/search?${new URLSearchParams({
-    q: terms,
-    type: 'track',
-    limit: String(SEARCH_LIMIT),
-  })}`;
+  const { items, reached } = await runSearch(terms);
+  if (!reached) return { track: null, reached: false };
 
-  let page: SearchResponse;
-  try {
-    const response = await fetch(url, {
-      headers: { authorization: `Bearer ${await userAccessToken()}` },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    // These two are true of the whole run, not of this candidate: failing them
-    // quietly would empty the pool one silent drop at a time.
-    if (response.status === 401) {
-      throw new OrderError(401, 'That Spotify connection has expired. Connect your account again.');
-    }
-    if (response.status === 429) {
-      throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
-    }
-    if (!response.ok) {
-      console.warn(`[spotify] search answered ${response.status}`);
-      return { track: null, reached: false };
-    }
-    page = (await response.json()) as SearchResponse;
-  } catch (cause) {
-    if (cause instanceof OrderError) throw cause;
-    console.warn('[spotify] search failed to reach the API');
-    return { track: null, reached: false };
-  }
-
-  for (const found of page.tracks?.items ?? []) {
+  for (const found of items) {
     const credited = found?.artists?.[0]?.name;
     if (!found?.id || !found.name || !credited) continue;
     if (!isConfidentMatch({ title, artist: artist ?? credited }, { title: found.name, artist: credited })) {
@@ -303,7 +355,7 @@ export async function fetchTrack(spotifyId: string): Promise<SpotifyTrack | null
       throw new OrderError(401, 'That Spotify connection has expired. Connect your account again.');
     }
     if (response.status === 429) {
-      throw new OrderError(429, 'Spotify is rate-limiting us right now. Try again in a minute.');
+      throw spotifyRateLimited(response);
     }
     if (!response.ok) {
       console.warn(`[spotify] track lookup answered ${response.status}`);
@@ -330,4 +382,42 @@ export async function fetchTrack(spotifyId: string): Promise<SpotifyTrack | null
     spotifyUrl: found.external_urls?.spotify ?? null,
     explicit: found.explicit === true,
   };
+}
+
+/**
+ * The thumbnail the seed picker shows. Rows are 40px, so the smallest rung of
+ * Spotify's ladder is already generous, and thirty of them can be in flight
+ * across three open slots — the 300px copy would be forty times the bytes for
+ * a picture the size of a fingernail.
+ */
+const THUMB_COVER_WIDTH = 64;
+
+/**
+ * Everything Spotify offers for a query, in its own order, unfiltered.
+ *
+ * Deliberately *not* passed through `isConfidentMatch`. That test exists
+ * because the engine has to decide alone whether a name Last.fm supplied is the
+ * record it meant; here a person is looking at ten covers and deciding for
+ * themselves, and a string comparison second-guessing them would only hide the
+ * track they were reaching for. Half-typed queries are the normal case and
+ * would fail it constantly.
+ */
+export async function searchSuggestions(query: string): Promise<SeedSuggestion[]> {
+  const terms = stripQuerySyntax(query);
+  if (!terms) return [];
+
+  const { items } = await runSearch(terms);
+  return items.flatMap((found) => {
+    const credited = found?.artists?.[0]?.name;
+    if (!found?.id || !found.name || !credited) return [];
+    return [
+      {
+        spotifyId: found.id,
+        title: found.name,
+        artist: credited,
+        thumb: pickCover(found.album?.images, THUMB_COVER_WIDTH),
+        explicit: found.explicit === true,
+      },
+    ];
+  });
 }

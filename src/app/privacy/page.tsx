@@ -55,12 +55,16 @@ export default function PrivacyPage() {
         playlist&rsquo;s name, its description or its cover image.
       </p>
       <p>
-        In <strong>Discover</strong>, it reads the song titles you type into the seed fields.
-        It looks each one up in Spotify&rsquo;s public catalogue to find out which recording
-        you meant, then looks up the tracks it is considering suggesting. For every one of
-        those it reads the same five things listed above. None of this touches your playlists,
-        your library or your listening history — Discover searches the public catalogue, and
-        the only thing it knows about you is what you typed.
+        In <strong>Discover</strong>, it reads what you type into the seed fields.{' '}
+        <strong>As you type, the text is sent to Spotify to search for it</strong> — not only
+        the finished title, but the partial one, each time you pause. Spettro waits for a
+        pause rather than sending every keystroke, and asks nothing at all until you have
+        typed two characters, but what reaches Spotify is a search box you are still typing
+        into. Once you pick a song from the results, it looks up the tracks it is considering
+        suggesting, and for each of those reads the same five things listed above. None of
+        this touches your playlists, your library or your listening history — Discover
+        searches the public catalogue, and the only thing it knows about you is what you
+        typed and what you picked.
       </p>
 
       <h2>How it is used</h2>
