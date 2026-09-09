@@ -9,11 +9,10 @@ Two modes:
 - **ORDER** — reorders one of the listener's own Spotify playlists along a
   colour sequence read off the album artwork. Built and working.
 - **DISCOVER** — finds tracks similar to one to three seeds. **Built and
-  working, with one gap.** The similarity engine is real and runs on live
-  Last.fm, Spotify and ReccoBeats data. What is missing is the seed picker: a
-  slot is still a bare text field holding a title and nothing else, so the
-  server resolves each typed title against Spotify itself. See *The seed picker
-  does not exist*, below.
+  working.** The similarity engine runs on live Last.fm, Spotify and ReccoBeats
+  data, and the seeds are chosen from Spotify's catalogue through a
+  search-as-you-type picker, so each one reaches the engine already carrying its
+  title, artist and Spotify id.
 
 This file is the handover between sessions. Everything below is something that
 cost time to discover or a decision whose reasoning is not visible in the code.
@@ -96,11 +95,22 @@ CDN, and after a session of repeated verification runs Spotify started answering
 429 to the first search of a cold server — the app's own limiter reset, the
 counter at zero, and still a 429, which is how it was told apart.
 
-**It does not clear in a few minutes.** Measured: still refusing after 5, after
-9, and after roughly 20, across dev server restarts. Whatever window Spotify
-applies to a development-mode app after sustained search traffic is long enough
-that a verification session can lose the rest of its afternoon to it, so pace
-the runs from the start rather than discovering this at the end.
+**It does not clear in minutes. It cleared in nineteen hours.** The block was
+guessed at for most of a session — still refusing after 5 minutes, after 9,
+after 20, across dev server restarts — before anything read the header that says
+so. `Retry-After` came back **69253 seconds**, a little over nineteen hours.
+
+That number is the reason `spotifyRateLimited` in `src/lib/server/spotify.ts`
+exists: it logs the header and puts the real figure in the sentence the listener
+reads, because "try again in a minute" is a promise this app cannot keep and had
+been making. **Read the header before theorising about the duration** — it was
+there the whole time.
+
+The practical consequence is a budget, not a nuisance. A development-mode app
+has roughly one afternoon of hard searching in it per day, and one three-seed
+Discover run is 63 searches. Plan verification around that: pace the runs, never
+loop them, and prefer stubbing the client's dependency to re-running the real
+one for a UI question that does not need it.
 
 Two consequences worth keeping: verification has to be paced and never looped;
 and `DISCOVER_LIMIT` at 8 per 5 minutes exists to protect Spotify's quota rather
@@ -339,6 +349,23 @@ reporting four moderates is the correct position, not an oversight.
   after which the script can click the consent button itself.
 - Band counts should be read **per distinct cover, not per track**. Eight tracks
   from one album inflate a band and look like a mis-tuned range; they are not.
+- **`npx tsc --noEmit` can report success on code that does not compile.**
+  `incremental` is on in `tsconfig.json`, and a stale `tsconfig.tsbuildinfo`
+  makes it skip work it should redo — it passed a build with three genuine type
+  errors in it. Delete `tsconfig.tsbuildinfo` before typechecking, or trust
+  `npm run build`, which runs a full pass.
+- **A test harness that runs no assertions must fail, not pass.** Two scripts
+  here printed "ALL CHECKS PASSED" after checking nothing, because the API call
+  they were built on had returned an error and the loop had no rows to walk.
+  Count the assertions and assert on the count.
+- **Click the mode tab, then wait for the panel to be visible.** A click that
+  lands before hydration does nothing, and the failure surfaces many steps later
+  as a field that exists but is hidden inside the other panel.
+- **Stub the dependency when the question is about the client.** The picker's
+  whole interaction — typing, picking by mouse and keyboard, replacing,
+  abandoning an edit, clearing, the button at zero to three seeds — is client
+  behaviour and was verified against a stubbed `/api/spotify/search` while
+  Spotify was refusing. Say which leg that leaves unproven, and keep owing it.
 
 Playlists used for verification so far, both owned by the account that signs in
 (anything else is a 403):
@@ -390,33 +417,57 @@ is how the neutral gate went wrong.
 
 ---
 
-## The seed picker does not exist
+## The seed picker
 
-The brief for the similarity engine described the seed slots as already done and
-not to be touched: search with instant suggestions, each seed carrying a title,
-an artist and a Spotify id. **None of that is in the code.** `SeedSlots` is
-three plain text inputs, `Seed` is `{ title }`, and no search route has ever
-existed — `git log --diff-filter=A -- 'src/app/api/**'` confirms it.
+Three comboboxes over `/v1/search`, one per slot. A seed is **chosen and never
+typed**: the engine gets its title, artist and Spotify id together and fetches
+by id, rather than searching a name a second time and risking a different
+pressing with different artwork — and so a different colour to rank against.
+The engine was written to accept that shape from the start and did not change.
 
-Rather than build it unasked, the engine takes a seed in either shape.
-`DiscoverSeed` carries an optional `artist` and `spotifyId`; when they are
-absent the server resolves the bare title through the same `searchTrack` the
-candidates go through, and when they are present it fetches by id instead —
-searching again for a record somebody already chose risks answering with a
-different pressing, and so with a different colour to compare against.
+The engine still accepts a bare title, and that path is not dead code: it is
+what makes the API usable without the picker, and `meta.seedsResolved` is what
+reports whether a guess worked.
 
-The picker can therefore be built later without touching the engine at all. What
-it has to do is send `artist` and `spotifyId` alongside the title. Until then a
-seed is whatever Spotify's search thinks a typed title meant, which is usually
-right, and is the reason `meta.seedsResolved` is worth reading.
+Decisions in `SeedSlots.tsx` that are not defaults:
+
+- **Enter never invents a seed.** It picks the highlighted row or does nothing.
+  A string that was never resolved is exactly what this replaces.
+- **Leaving a slot mid-edit restores the picked title**, on blur and on Escape.
+  Otherwise the field shows one song while the app holds another, and Find sits
+  enabled on a seed nothing on screen names.
+- **The list is hidden with `display: none`, never unmounted**, because the
+  `aria-controls` on the input would otherwise point at an element that is not
+  in the document.
+- **The state line under each field keeps its height** in all five of its
+  states, since every one of them arrives while somebody is typing above it and
+  a line that appeared and vanished would move the next slot on mobile.
+- **`empty` and `failed` are different states.** Spotify having nothing means
+  retype; Spotify not answering means retry. The picker got this wrong first
+  time and said "No songs match that." to a 429.
+
+The debounce is 300ms and the floor is two characters, which are quota
+decisions before they are UX ones — see the rate-limit note above. The privacy
+policy says the partial text reaches Spotify as you type, because it does.
+
+**The dropdown overlays what is below it**, including the Find button and, on
+mobile, the other two slots. That is deliberate: the alternative reflows the
+column under the reader's hands while they are typing. It was looked at on both
+viewports and left.
 
 ## What is left
 
 - **Part D — accessibility.**
-- **The Discover seed picker**, above. ReccoBeats also offers seed-based
-  recommendations; whether that replaces or joins Last.fm is still undecided,
-  and since the pool is the only thing Last.fm is used for, swapping it is a
-  change confined to `collectCandidates`.
+- **Two verifications owed to Spotify's rate limit**, both blocked when the
+  picker was built and neither since re-run. First, the Discover result bar at a
+  tempo below the 80 BPM display floor: the arithmetic is checked against the
+  real constants (5% of an 86px rail = 4.3px) but no screenshot shows the row.
+  Second, the seed picker against the live search — its interaction is verified
+  in full against a stub, so what is unproven is only that the real
+  `/api/spotify/search` returns what the component expects.
+- ReccoBeats also offers seed-based recommendations; whether that replaces or
+  joins Last.fm is still undecided, and since the pool is the only thing Last.fm
+  is used for, swapping it is a change confined to `collectCandidates`.
 - **The first Vercel deploy.** The code no longer assumes a host: the origin
   comes from `src/lib/server/base-url.ts`, which prefers `SPETTRO_BASE_URL`,
   falls back to `VERCEL_PROJECT_PRODUCTION_URL`, and otherwise uses
