@@ -23,10 +23,15 @@ const BPM_RANGE = { min: 80, max: 170 } as const;
  * reading would then look exactly like an absent one, which is the distinction
  * this whole column exists to keep. So a tempo that exists always leaves a mark,
  * however slow.
+ *
+ * Five per cent, because the rail it sits on is 86px wide, which makes this
+ * 4.3px: short enough to read as the bottom of the scale, wide enough to read
+ * as something. Two per cent was the first guess and is 1.7px, which is a mark
+ * nobody sees — the same failure one step smaller.
  */
-const MIN_BAR_SHARE = 2;
+const MIN_BAR_SHARE = 5;
 
-/** Position of a tempo inside the display range, as a 2–100 percentage. */
+/** Position of a tempo inside the display range, as a 5–100 percentage. */
 function bpmShare(bpm: number): number {
   const span = BPM_RANGE.max - BPM_RANGE.min;
   const share = ((bpm - BPM_RANGE.min) / span) * 100;
