@@ -1,5 +1,4 @@
 import { meanHue } from '@/lib/color';
-import { BANDS, bandIndex } from '@/lib/spectrum';
 import type { Stat, Track } from '@/lib/types';
 
 /** Median, so one track read an octave out does not drag the read-out around. */
@@ -14,30 +13,24 @@ function median(values: readonly number[]): number {
  * Tempo across the sequence. Only tracks with a real reading count towards it,
  * and when some are missing the tally says so rather than implying the figure
  * speaks for the whole playlist.
+ *
+ * The tally used to sit in brackets on the same line as the BPM, where it read
+ * as part of the figure. It is a second line now, smaller: the number is what
+ * the card is for, and how many tracks it speaks for is a footnote to it.
  */
-function tempoStat(tracks: readonly Track[]): string {
+function tempoStat(tracks: readonly Track[]): Pick<Stat, 'value' | 'detail' | 'detailLabel'> {
   const known = tracks
     .map((track) => track.bpm)
     .filter((bpm): bpm is number => typeof bpm === 'number' && bpm > 0)
     .sort((a, b) => a - b);
 
-  if (known.length === 0) return '—';
-  return known.length === tracks.length
-    ? `${median(known)} BPM`
-    : `${median(known)} BPM (${known.length}/${tracks.length})`;
-}
-
-/**
- * How many of the eleven bands the playlist reaches. This replaced a range of
- * luminance values: lightness now only orders covers inside a band, so the span
- * that describes a sequence is how much of the spectrum it actually touches.
- */
-function spreadStat(tracks: readonly Track[]): string {
-  const bands = new Set<number>();
-  for (const track of tracks) {
-    bands.add(bandIndex(track.hue, track.lightness ?? 0));
-  }
-  return `${bands.size}/${BANDS.length}`;
+  if (known.length === 0) return { value: '—' };
+  if (known.length === tracks.length) return { value: `${median(known)} BPM` };
+  return {
+    value: `${median(known)} BPM`,
+    detail: `${known.length}/${tracks.length}`,
+    detailLabel: `from ${known.length} of ${tracks.length} tracks`,
+  };
 }
 
 /**
@@ -45,9 +38,14 @@ function spreadStat(tracks: readonly Track[]): string {
  *
  * `dropped` counts tracks whose artwork could not be read, and it appears
  * only when it is not zero. On a healthy run there is nothing to say and the
- * panel keeps its four figures; when Spotify's CDN is slow enough to cost
+ * panel keeps its three figures; when Spotify's CDN is slow enough to cost
  * covers, the number that explains a short grid is on screen instead of
  * buried in the API response.
+ *
+ * There was a fourth figure, `Bands`, counting how many of the eleven the
+ * sequence reached. It was dropped: the grid already shows the spread by being
+ * the spread, and the number needed the band list explained before it meant
+ * anything.
  */
 export function sequenceStats(tracks: readonly Track[], dropped = 0): Stat[] {
   const hues = tracks
@@ -57,9 +55,12 @@ export function sequenceStats(tracks: readonly Track[], dropped = 0): Stat[] {
 
   return [
     { label: 'Items', value: String(tracks.length) },
-    { label: 'Bands', value: tracks.length === 0 ? '—' : spreadStat(tracks) },
-    { label: 'Tempo', value: tempoStat(tracks) },
-    { label: 'Dominant hue', value: dominant === null ? '—' : `${dominant}°` },
+    { label: 'Avg tempo', ...tempoStat(tracks) },
+    {
+      label: 'Dominant hue',
+      value: dominant === null ? '—' : `${dominant}°`,
+      ...(dominant === null ? {} : { swatchHue: dominant }),
+    },
     ...(dropped > 0 ? [{ label: 'Covers unread', value: String(dropped) }] : []),
   ];
 }

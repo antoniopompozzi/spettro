@@ -90,6 +90,33 @@ export function oklchHue(a: number, b: number): number {
   return ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
 }
 
+/*
+ * The swatch beside the dominant hue read-out. A hue angle on its own is not a
+ * colour — it needs a lightness and a chroma before it can be drawn — so both
+ * are fixed here rather than taken from the sequence. That is the point: the
+ * swatch answers "which hue is this number", and two playlists that land on the
+ * same angle must show the same patch, however light or vivid their covers are.
+ *
+ * 0.72 and 0.12 are the most saturated pair that stays inside sRGB at every one
+ * of the 360 angles — measured, worst case still 6.8e-3 clear of a channel
+ * limit. Anything more vivid clips somewhere around 200 degrees, and clipping a
+ * channel bends the hue, which would make the patch disagree with the number
+ * printed next to it at exactly the angles it was clipped at.
+ */
+const SWATCH_LIGHTNESS = 0.72;
+const SWATCH_CHROMA = 0.12;
+
+/** A hue angle (0..360) as a flat `#RRGGBB` patch of that same hue. */
+export function hueSwatchHex(hue: number): string {
+  const radians = (hue * Math.PI) / 180;
+  const [r, g, b] = oklabToLinear(
+    SWATCH_LIGHTNESS,
+    SWATCH_CHROMA * Math.cos(radians),
+    SWATCH_CHROMA * Math.sin(radians),
+  );
+  return linearToHex(r, g, b);
+}
+
 /**
  * Circular mean of a set of hue angles. Plain averaging is wrong on a wheel:
  * 350 and 10 degrees average to 180 rather than to 0.

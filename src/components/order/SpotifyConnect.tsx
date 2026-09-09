@@ -29,7 +29,15 @@ export function SpotifyConnect({ connected, onDisconnect }: SpotifyConnectProps)
       <div className={styles.row}>
         <p className={`${styles.status} microLabel`}>
           <span className={`${styles.dot} ${connected ? '' : styles.off}`} aria-hidden="true" />
-          {connected ? 'Spotify connected' : 'Spotify not connected'}
+          {/*
+            * On a phone the row ran out of width and this text sat against the
+            * button. It is hidden there rather than dropped: the dot alone is
+            * the whole indicator on screen, and it is `aria-hidden`, so without
+            * these words the section would announce nothing but its own label.
+            */}
+          <span className={styles.statusText}>
+            {connected ? 'Spotify connected' : 'Spotify not connected'}
+          </span>
         </p>
         {connected ? (
           <button type="button" className={`${styles.action} microLabel`} onClick={onDisconnect}>
