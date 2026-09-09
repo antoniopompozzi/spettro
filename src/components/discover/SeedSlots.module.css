@@ -139,6 +139,19 @@
 }
 
 /*
+ * A search that never reached Spotify, set apart from the dim grey of "nothing
+ * matched" because the two ask for different things: retry, against retype.
+ *
+ * The palette is monochrome green and has no warning colour, so this borrows
+ * the one the app already speaks failure in — `FormError` says every other
+ * refusal in `--green-2`. Bright against dim is the whole contrast available,
+ * and it is the one the interface already uses for this.
+ */
+.failed {
+  color: var(--green-2);
+}
+
+/*
  * The suggestions.
  *
  * Absolute, so opening one does not push the other two slots down the page —

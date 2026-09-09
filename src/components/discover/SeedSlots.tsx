@@ -24,10 +24,17 @@ const DEBOUNCE_MS = 300;
 const MIN_QUERY = 2;
 
 /**
- * What a slot is doing, which is four different things that would otherwise all
+ * What a slot is doing, which is five different things that would otherwise all
  * render as an empty list.
+ *
+ * `empty` and `failed` are the pair worth keeping apart. Spotify answering that
+ * it has nothing is a fact about the catalogue and means try different words;
+ * Spotify not answering is a fact about the afternoon and means try the same
+ * words again. The engine already tells these apart for its own lookups, and a
+ * search box that called an outage "no songs match that" would be sending the
+ * person to fix a spelling that was never wrong.
  */
-type Status = 'idle' | 'searching' | 'results' | 'empty';
+type Status = 'idle' | 'searching' | 'results' | 'empty' | 'failed';
 
 interface SlotState {
   /** What is in the field, which is not the same as what has been picked. */
@@ -108,9 +115,19 @@ export function SeedSlots({ seeds, onSelect, onClear }: SeedSlotsProps) {
           cache: 'no-store',
           signal: controller.signal,
         })
-          .then((response) => response.json() as Promise<{ results?: SeedSuggestion[] }>)
+          .then(async (response) => {
+            // A refusal carries a readable sentence and no `results` key at
+            // all, so reading the body without checking the status is how a
+            // 429 comes out as an empty catalogue.
+            if (!response.ok) return null;
+            return (await response.json()) as { results?: SeedSuggestion[] };
+          })
           .then((body) => {
             if (runs.current[index] !== run) return;
+            if (!body) {
+              patch(index, { results: [], status: 'failed', open: true, active: -1 });
+              return;
+            }
             const results = body.results ?? [];
             patch(index, {
               results,
@@ -121,10 +138,7 @@ export function SeedSlots({ seeds, onSelect, onClear }: SeedSlotsProps) {
           })
           .catch(() => {
             if (runs.current[index] !== run || controller.signal.aborted) return;
-            // A failed lookup is not an empty catalogue, but at this size the
-            // distinction has nowhere to go: the row says nothing came back and
-            // the person tries again, which is the same thing either way.
-            patch(index, { results: [], status: 'empty', open: true, active: -1 });
+            patch(index, { results: [], status: 'failed', open: true, active: -1 });
           });
       }, DEBOUNCE_MS);
     },
@@ -278,6 +292,8 @@ export function SeedSlots({ seeds, onSelect, onClear }: SeedSlotsProps) {
                 <span className={styles.searching}>Searching Spotify…</span>
               ) : slot.status === 'empty' ? (
                 <span className={styles.none}>No songs match that.</span>
+              ) : slot.status === 'failed' ? (
+                <span className={styles.failed}>Spotify did not answer. Try again.</span>
               ) : seed ? (
                 <span className={styles.picked}>{seed.artist}</span>
               ) : null}
