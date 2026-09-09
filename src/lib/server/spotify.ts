@@ -179,6 +179,21 @@ interface SearchResponse {
 }
 
 /**
+ * The outcome of one lookup, which has two failures that look alike and mean
+ * opposite things.
+ *
+ * `track: null` with `reached: true` is Spotify answering that it has nothing
+ * matching — a fact about the catalogue. `reached: false` is the search never
+ * completing: a 502, a timeout, a connection that went nowhere. Collapsing them
+ * into one `null` is how a transient outage ends up telling somebody to check
+ * their spelling.
+ */
+export interface SearchResult {
+  track: SpotifyTrack | null;
+  reached: boolean;
+}
+
+/**
  * The one track in Spotify's catalogue that a title and artist name, or `null`.
  *
  * This is the bridge Discover stands on: Last.fm answers in text, and a colour
@@ -199,9 +214,10 @@ interface SearchResponse {
  * match and Spotify's own popularity ordering breaks the tie — which is the
  * behaviour a person typing a bare song title expects.
  */
-export async function searchTrack(title: string, artist?: string): Promise<SpotifyTrack | null> {
+export async function searchTrack(title: string, artist?: string): Promise<SearchResult> {
   const terms = stripQuerySyntax(artist ? `${title} ${artist}` : title);
-  if (!terms) return null;
+  // An empty query is a fact about the input, not a failure to reach anything.
+  if (!terms) return { track: null, reached: true };
 
   const url = `${API_BASE}/search?${new URLSearchParams({
     q: terms,
@@ -226,13 +242,13 @@ export async function searchTrack(title: string, artist?: string): Promise<Spoti
     }
     if (!response.ok) {
       console.warn(`[spotify] search answered ${response.status}`);
-      return null;
+      return { track: null, reached: false };
     }
     page = (await response.json()) as SearchResponse;
   } catch (cause) {
     if (cause instanceof OrderError) throw cause;
     console.warn('[spotify] search failed to reach the API');
-    return null;
+    return { track: null, reached: false };
   }
 
   for (const found of page.tracks?.items ?? []) {
@@ -244,17 +260,21 @@ export async function searchTrack(title: string, artist?: string): Promise<Spoti
 
     const images = found.album?.images;
     return {
-      id: found.id,
-      spotifyId: found.id,
-      title: found.name,
-      artist: credited,
-      cover: pickCover(images, DISPLAY_COVER_WIDTH),
-      swatch: pickCover(images, SWATCH_COVER_WIDTH),
-      spotifyUrl: found.external_urls?.spotify ?? null,
-      explicit: found.explicit === true,
+      track: {
+        id: found.id,
+        spotifyId: found.id,
+        title: found.name,
+        artist: credited,
+        cover: pickCover(images, DISPLAY_COVER_WIDTH),
+        swatch: pickCover(images, SWATCH_COVER_WIDTH),
+        spotifyUrl: found.external_urls?.spotify ?? null,
+        explicit: found.explicit === true,
+      },
+      reached: true,
     };
   }
-  return null;
+  // Spotify answered; none of its ten was confidently the track asked for.
+  return { track: null, reached: true };
 }
 
 /** Spotify's base-62 ids are 22 characters. Checked before it reaches a URL path. */

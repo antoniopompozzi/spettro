@@ -133,6 +133,12 @@ export interface DiscoverResponse {
     resolved: number;
     /** Looked up and dropped: no confident match, or the seed's own record. */
     unresolved: number;
+    /**
+     * Of those, how many never reached Spotify at all — a 502 or a timeout
+     * rather than a miss. A short list explained by an outage looks nothing
+     * like one explained by obscure candidates, and only this tells them apart.
+     */
+    unreachable: number;
     /** Resolved but dropped because their artwork yielded no colour. */
     withoutColour: number;
     /** Excluded by the tempo filter. Zero when no seed had a tempo to filter on. */

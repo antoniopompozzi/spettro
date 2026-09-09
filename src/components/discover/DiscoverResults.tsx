@@ -15,11 +15,22 @@ import styles from './DiscoverResults.module.css';
  */
 const BPM_RANGE = { min: 80, max: 170 } as const;
 
-/** Position of a tempo inside the display range, as a 0–100 percentage. */
+/**
+ * The shortest bar a measured tempo may draw.
+ *
+ * Clamping alone puts anything at or below the floor at zero width, which draws
+ * nothing — and nothing is what a track with no tempo at all draws. A 77 BPM
+ * reading would then look exactly like an absent one, which is the distinction
+ * this whole column exists to keep. So a tempo that exists always leaves a mark,
+ * however slow.
+ */
+const MIN_BAR_SHARE = 2;
+
+/** Position of a tempo inside the display range, as a 2–100 percentage. */
 function bpmShare(bpm: number): number {
   const span = BPM_RANGE.max - BPM_RANGE.min;
   const share = ((bpm - BPM_RANGE.min) / span) * 100;
-  return Math.max(0, Math.min(100, Math.round(share)));
+  return Math.max(MIN_BAR_SHARE, Math.min(100, Math.round(share)));
 }
 
 /**
