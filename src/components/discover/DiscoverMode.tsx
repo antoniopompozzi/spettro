@@ -31,22 +31,32 @@ function hintFor(count: number): string {
   }
 }
 
-export function DiscoverMode() {
+export function DiscoverMode({ active }: { active: boolean }) {
   const [seeds, setSeeds] = useState<Seed[]>(EMPTY_SEEDS);
   const [connected, setConnected] = useState<boolean | null>(null);
-  const { phase, results, error, setError, start } = useDiscover();
+  const { phase, results, error, setError, start, reset } = useDiscover();
 
   const filled = seeds.filter((seed): seed is NonNullable<Seed> => Boolean(seed));
 
   // Discover reaches Spotify as the listener for the same reason Order does:
   // this app has no client secret, so the catalogue is searched with the user's
   // own token or not at all.
+  //
+  // Re-read every time this becomes the visible panel, because the connect
+  // control is in Order: a disconnect always happens while Discover is off
+  // screen. Suggestions are built from a listener's own account and go with the
+  // session, exactly as an Order sequence does — nothing of theirs stays up
+  // after they have said to end it.
   useEffect(() => {
+    if (!active) return;
     void fetch('/api/spotify/session', { cache: 'no-store' })
       .then((response) => response.json() as Promise<{ connected: boolean }>)
-      .then((session) => setConnected(session.connected))
+      .then((session) => {
+        setConnected(session.connected);
+        if (!session.connected) reset();
+      })
       .catch(() => setConnected(false));
-  }, []);
+  }, [active, reset]);
 
   const writeSlot = (index: number, seed: Seed) => {
     setSeeds((current) => current.map((existing, i) => (i === index ? seed : existing)));
