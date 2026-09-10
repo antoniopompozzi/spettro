@@ -41,15 +41,22 @@ function bpmShare(bpm: number): number {
 /**
  * The suggestions, one row each.
  *
- * The plate on the left is the colour Spettro read off the track's artwork —
- * the thing that decided its rank — and not the artwork itself. Spotify's
- * guidelines forbid cropping or overlaying album art, and a 56px square beside
- * a title would be doing both; the colour is Spettro's own reading of it and
- * carries no such rule. The title is the link out, as it is in the grid.
+ * The square on the left is the album art. It used to be a plate of the colour
+ * Spettro read off that art, on the reasoning that showing the art small would
+ * be cropping and overlaying it — which was simply wrong: Spotify's guidelines
+ * forbid altering artwork, and a square cover in a square box at 56px is
+ * neither cropped nor covered. It is the same picture, smaller. The extracted
+ * colour has not gone anywhere; it still decides the ranking, it is just no
+ * longer standing in for the thing it was read from.
  *
- * A track with no tempo shows an em dash and no bar. ReccoBeats has no reading
- * for a fair share of any catalogue, and a zero-width bar at the left of the
- * scale would be a claim that the track is slow rather than unmeasured.
+ * That colour is now painted behind the image rather than instead of it, so a
+ * cover that fails to load leaves the row with a colour instead of a hole —
+ * the same fallback the grid uses.
+ *
+ * The title is the link out, as it is in the grid. A track with no tempo shows
+ * an em dash and no bar: ReccoBeats has no reading for a fair share of any
+ * catalogue, and a zero-width bar at the left of the scale would be a claim
+ * that the track is slow rather than unmeasured.
  */
 export function DiscoverResults({ items }: { items: readonly Suggestion[] }) {
   return (
@@ -59,8 +66,26 @@ export function DiscoverResults({ items }: { items: readonly Suggestion[] }) {
           <div
             className={styles.cover}
             style={{ background: item.color }}
-            aria-hidden="true"
-          />
+            // Only decorative while it is standing in for a cover that is not
+            // there; with the image on top, the image carries the meaning.
+            aria-hidden={item.coverUrl ? undefined : true}
+          >
+            {item.coverUrl ? (
+              // Square art in a square frame, so `object-fit` never has
+              // anything to crop. The dimensions are the rendered ones, which
+              // reserves the row's height before the image decodes.
+              // eslint-disable-next-line @next/next/no-img-element -- fixed 56px thumbnail
+              <img
+                className={styles.art}
+                src={item.coverUrl}
+                alt={`Album art for ${item.title} by ${item.artist}`}
+                width={56}
+                height={56}
+                loading="lazy"
+                decoding="async"
+              />
+            ) : null}
+          </div>
           <div className={styles.meta}>
             <div className={styles.title}>
               {item.spotifyUrl ? (
