@@ -377,6 +377,16 @@ reporting four moderates is the correct position, not an oversight.
   abandoning an edit, clearing, the button at zero to three seeds — is client
   behaviour and was verified against a stubbed `/api/spotify/search` while
   Spotify was refusing. Say which leg that leaves unproven, and keep owing it.
+  Both legs are now verified, a day apart, and they agreed.
+- **A "no results" query must contain no real words.** `zzzqqxvv nothing at all`
+  looks like nonsense and is not: Spotify matched it on *nothing* and *all* and
+  returned tracks, so the empty state never ran and the check failed on a fact
+  about English. `qxzvbnmwkj` works.
+- **A script written before the seed picker will silently measure an empty
+  page.** `bar.mjs` typed a title into the field and pressed Find, which used to
+  set a seed and now sets nothing — Find stays disabled, no results appear, and
+  it reads exactly like a broken product. Any script that predates the picker
+  has to be taught to choose from the dropdown first.
 
 Playlists used for verification so far, both owned by the account that signs in
 (anything else is a 403):
@@ -466,16 +476,28 @@ mobile, the other two slots. That is deliberate: the alternative reflows the
 column under the reader's hands while they are typing. It was looked at on both
 viewports and left.
 
+**Verified against the live search on 10 September 2026, 43 checks passing** at
+1280x900 and 390x844: typing with and without results, thumbnails off the real
+CDN, selection by mouse and by keyboard, replacing a chosen seed, abandoning an
+edit, clearing, and the button at zero to three seeds. The focus ring was
+measured rather than eyeballed — the frame goes `rgb(0,199,22)` to
+`rgb(67,236,68)` and the outline is `solid 2px rgb(90,254,89)` on each of the
+three fields in turn, with never more than one framed.
+
+The live list is also the argument for the whole feature. Typing `karma police`
+returns three entries called Karma Police — Radiohead's, Radiohead's remaster,
+and a different song by Pierce The Veil — with visibly different sleeves.
+Picking the wrong one ranks the entire search on the wrong colour, and only the
+cover tells them apart at a glance.
+
+**The result bar below the 80 BPM floor was verified the same day.** `My Hero`
+at 77 BPM draws 4.3px; `Viva La Vida`, which has no tempo at all, draws no bar.
+That is the distinction `MIN_BAR_SHARE` exists for, and it now has a screenshot
+behind it rather than only arithmetic.
+
 ## What is left
 
 - **Part D — accessibility.**
-- **Two verifications owed to Spotify's rate limit**, both blocked when the
-  picker was built and neither since re-run. First, the Discover result bar at a
-  tempo below the 80 BPM display floor: the arithmetic is checked against the
-  real constants (5% of an 86px rail = 4.3px) but no screenshot shows the row.
-  Second, the seed picker against the live search — its interaction is verified
-  in full against a stub, so what is unproven is only that the real
-  `/api/spotify/search` returns what the component expects.
 - ReccoBeats also offers seed-based recommendations; whether that replaces or
   joins Last.fm is still undecided, and since the pool is the only thing Last.fm
   is used for, swapping it is a change confined to `collectCandidates`.
