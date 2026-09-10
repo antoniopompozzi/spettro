@@ -16,11 +16,29 @@
   background: var(--surface-raised);
 }
 
+/*
+ * Now that this holds real album art, it takes the artwork radius — 4px on a
+ * phone and 8px above the breakpoint — and not the 12px the rest of the
+ * interface uses. Spotify's guidelines prescribe that separately from
+ * everything else, and the rule is about artwork only.
+ *
+ * The extracted colour stays as this element's background, so it shows through
+ * until the image decodes and remains if it never does.
+ */
 .cover {
   width: 56px;
   height: 56px;
   flex: none;
-  border-radius: var(--radius-cover);
+  overflow: hidden;
+  border-radius: var(--radius-artwork);
+}
+
+.art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Square source in a square box: there is never anything to crop. */
+  object-fit: cover;
 }
 
 .meta {

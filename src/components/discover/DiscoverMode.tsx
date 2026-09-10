@@ -111,8 +111,12 @@ export function DiscoverMode({ active }: { active: boolean }) {
         * place Spotify's content reached the screen. The seed picker now shows
         * its covers and its metadata from the second character typed, so the
         * mark belongs to the whole panel and stands whatever state it is in.
+        *
+        * The label said "cover colours" while the results showed a plate of the
+        * extracted colour rather than the art. They show the art now, so it
+        * says covers — the label is a statement about what is on screen.
         */}
-      <SpotifyAttribution label="Search, track data and cover colours" />
+      <SpotifyAttribution label="Search, covers and track data" />
 
       {phase === 'empty' ? <DiscoverEmpty /> : null}
       {phase === 'results' ? <DiscoverResults items={results} /> : null}

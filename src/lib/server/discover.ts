@@ -13,8 +13,16 @@ import { fetchAudioFeatures } from './reccobeats';
 import { COVER_CONCURRENCY } from './sequence';
 import { fetchTrack, searchTrack, type SpotifyTrack } from './spotify';
 
-/** Suggestions shown. Everything upstream is sized to still fill this after drops. */
-const RESULT_LIMIT = 20;
+/**
+ * Suggestions shown.
+ *
+ * Five, down from twenty. Everything upstream is still sized for the larger
+ * number and deliberately so: the pool is what the ranking chooses from, and
+ * cutting it would change which five come out, not just how many are printed.
+ * The cost of that is real and worth naming — `RESOLVE_LIMIT` candidates are
+ * still searched and their covers still read to produce a list of five.
+ */
+const RESULT_LIMIT = 5;
 
 /**
  * How many distinct candidate names are looked up on Spotify.
